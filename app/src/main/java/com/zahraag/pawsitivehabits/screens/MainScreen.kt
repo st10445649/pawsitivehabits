@@ -8,7 +8,12 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.BottomAppBarState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -32,14 +37,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.zahraag.pawsitivehabits.BottomNavItem
+import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
+import com.zahraag.pawsitivehabits.ui.theme.MintPrimary
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(){
+fun MainScreen(onNavigateToAddPet: () -> Unit){
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -108,7 +115,12 @@ fun MainScreen(){
                                     }
                                 }
                             },
-                            icon = { Icon(item.icon, contentDescription = item.title) },
+                            icon = { Icon(
+                                painter = painterResource(id = R.drawable.petnav),
+                                contentDescription = null,
+                                tint = MintPrimary,
+                                modifier = Modifier.size(64.dp)
+                            )} ,
                             label = { Text(item.title) },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = MintDarkGreen,
@@ -127,22 +139,27 @@ fun MainScreen(){
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(BottomNavItem.Home.route) {
-                HomeScreen(
-                    onNavigateToPetDetails = { petId -> navController.navigate("pet_detail/$petId") },
-                    onNavigateToFeatures = { navController.navigate(BottomNavItem.Features.route) }
-                )
+//                HomeScreen(
+//                    onNavigateToPetDetails = { petId -> navController.navigate("pet_detail/$petId") },
+//                    onNavigateToFeatures = { navController.navigate(BottomNavItem.Features.route) }
+//                )
             }
             composable(BottomNavItem.Pets.route) {
-                PetScreen(onAddPetClick = { navController.navigate("add_pet") })
+                PetScreen(
+                    pets = emptyList(),
+                    selectedPetId = null,
+                    onSelectPet = { selectedId -> /* Update selected pet */ },
+                    onAddPetSubmitted = { newPet -> /* Save pet */ }
+                )
             }
             composable(BottomNavItem.Agenda.route) {
-                AgendaScreen()
+                //AgendaScreen()
             }
             composable(BottomNavItem.Features.route) {
-                FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
+                //FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
             }
             composable("weight") {
-                WeightTrackerScreen(onOpenAddDialog = { navController.navigate("add_weight") })
+                //WeightTrackerScreen(onOpenAddDialog = { navController.navigate("add_weight") })
             }
 
         }
