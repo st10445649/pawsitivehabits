@@ -23,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -294,10 +295,8 @@ fun AddPetScreen(
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MintDarkGreen,
-                            modifier = Modifier.size(28.dp)
+                            Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null,
+                            tint = Color.White, modifier = Modifier.size(32.dp)
                         )
                     }
                 },
@@ -474,7 +473,7 @@ fun AddPetScreen(
                             checkedThumbColor = SurfaceWhite,
                             checkedTrackColor = MintDarkGreen,
                             uncheckedThumbColor = SurfaceWhite,
-                            uncheckedTrackColor = Color.LightGray
+                            uncheckedTrackColor = MintCardSurface
                         )
                     )
                 }

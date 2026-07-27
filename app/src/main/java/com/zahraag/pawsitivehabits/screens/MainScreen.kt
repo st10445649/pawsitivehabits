@@ -18,6 +18,7 @@ import androidx.compose.material3.BottomAppBarState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -61,31 +62,6 @@ fun MainScreen(onNavigateToAddPet: () -> Unit){
     )
 
     Scaffold(
-        topBar = {
-            if(currentRoute in bottomBarRoutes){
-                TopAppBar(
-                    title= {
-                        Text(
-                            text = "Pawsitive Habits",
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MintBackground
-                    ),
-                    actions = {
-                        IconButton(onClick = { navController.navigate("settings") }) {
-                            Icon(
-                                Icons.Default.Settings,
-                                contentDescription = "Settings",
-                                tint = TextDark
-                            )
-                        }
-                    }
-                )
-            }
-        },
         bottomBar = {
             if(currentRoute in bottomBarRoutes){
                 NavigationBar(
@@ -116,16 +92,21 @@ fun MainScreen(onNavigateToAddPet: () -> Unit){
                                 }
                             },
                             icon = { Icon(
-                                painter = painterResource(id = R.drawable.petnav),
+                                painter = painterResource(item.icon),
                                 contentDescription = null,
-                                tint = MintPrimary,
-                                modifier = Modifier.size(64.dp)
+                                modifier = Modifier.size(23.dp)
                             )} ,
-                            label = { Text(item.title) },
+                            label = { Text(item.title,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MintCardSurface
+                            ) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MintDarkGreen,
-                                selectedTextColor = MintDarkGreen,
+                                selectedIconColor = Color.White,
+                                unselectedIconColor = MintCardSurface.copy(alpha = 0.7f),
+                                selectedTextColor = Color.White,
+                                unselectedTextColor = MintCardSurface.copy(alpha = 0.7f),
                                 indicatorColor = MintCardSurface
+
                             )
                         )
                     }

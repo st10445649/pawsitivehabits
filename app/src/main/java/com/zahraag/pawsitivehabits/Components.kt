@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits
 
+import android.R.attr.singleLine
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -26,7 +27,7 @@ sealed class BottomNavItem(
     object Home: BottomNavItem("home", "Home", R.drawable.homenav)
     object Pets: BottomNavItem("pets", "Pets", R.drawable.petnav)
     object Agenda: BottomNavItem("agenda", "Agenda", R.drawable.calendarnav)
-    object Features: BottomNavItem("features", "Features", R.drawable.homenav)
+    object Features: BottomNavItem("features", "Features", R.drawable.featuresnav)
     object Profile: BottomNavItem("profile", "Profile", R.drawable.profilenav)
 
 }
@@ -53,7 +54,7 @@ fun MintInputField(
             focusedTextColor = TextDark,
             unfocusedTextColor = TextDark
         ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(28.dp),
         singleLine = true,
         modifier = modifier
             .fillMaxWidth()

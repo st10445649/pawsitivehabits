@@ -17,7 +17,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "main"
+    val startDestination = "Register"
 
     NavHost(
         navController = navController,

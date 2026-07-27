@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import com.zahraag.pawsitivehabits.R.font
+import com.zahraag.pawsitivehabits.R
 
 // Set of Material typography styles to start with
 
@@ -34,7 +34,7 @@ val Typography = Typography(
     fontWeight = FontWeight.Bold,
     fontSize = 32.sp
     ),
-    titleMedium = TextStyle(
+    headlineMedium = TextStyle(
     fontFamily = MontserratFontFamily,
     fontWeight = FontWeight.SemiBold,
     fontSize = 18.sp
@@ -48,5 +48,16 @@ val Typography = Typography(
     fontFamily = MontserratFontFamily,
     fontWeight = FontWeight.Normal,
     fontSize = 11.sp
-    )
+    ),
+
+    displayLarge = TextStyle(fontFamily = MontserratFontFamily),
+    displayMedium = TextStyle(fontFamily = MontserratFontFamily),
+    displaySmall = TextStyle(fontFamily = MontserratFontFamily),
+    headlineSmall = TextStyle(fontFamily = MontserratFontFamily),
+    titleLarge = TextStyle(fontFamily = MontserratFontFamily),
+    titleMedium = TextStyle(fontFamily = MontserratFontFamily),
+    titleSmall = TextStyle(fontFamily = MontserratFontFamily),
+    bodySmall = TextStyle(fontFamily = MontserratFontFamily),
+    labelLarge = TextStyle(fontFamily = MontserratFontFamily),
+    labelMedium = TextStyle(fontFamily = MontserratFontFamily),
 )
