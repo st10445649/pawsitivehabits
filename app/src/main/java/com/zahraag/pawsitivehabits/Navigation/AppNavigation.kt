@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.zahraag.pawsitivehabits.data.Pet
+import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
@@ -17,7 +19,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "Register"
+    val startDestination = "Login"
 
     NavHost(
         navController = navController,
@@ -65,15 +67,12 @@ fun AppNavigation() {
 
 
         composable("add_pet") {
-//            PetScreen(
-//                onBackClick = {
-//                    navController.popBackStack()
-//                },
-//                onSavePet = { newPet ->
-//                    // Save to Room DB here using your ViewModel
-//                    navController.popBackStack()
-//                }
-//            )
+            PetScreen(
+                pets= samplePets,
+                selectedPetId= null,
+                onSelectPet={},
+                onAddPetSubmitted={}
+           )
         }
     }
 }

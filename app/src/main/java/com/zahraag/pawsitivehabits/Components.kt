@@ -44,7 +44,7 @@ fun MintInputField(
     TextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = MintDarkGreen.copy(alpha = 0.5f)) },
+        placeholder = { Text(placeholder, color = MintDarkGreen.copy(alpha = 0.5f), style = MaterialTheme.typography.bodySmall) },
         trailingIcon = trailingIcon,
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MintCardSurface.copy(alpha = 0.6f),
@@ -66,7 +66,7 @@ fun MintInputField(
 fun LabelText(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.headlineMedium,
         color = MintDarkGreen,
         modifier = Modifier.padding(bottom = 6.dp)
     )

@@ -176,7 +176,8 @@ fun UnderlineInputField(
     TextField(
         value = value,
         onValueChange = onValueChange,
-        placeholder = { Text(placeholder, color = MintDarkGreen.copy(alpha = 0.6f)) },
+        placeholder = { Text(placeholder, color = MintDarkGreen.copy(alpha = 0.6f),
+            style = MaterialTheme.typography.bodySmall) },
         visualTransformation = if (isPassword && !isPasswordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         trailingIcon = {
             if (isPassword && onTogglePassword != null) {

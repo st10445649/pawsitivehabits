@@ -39,6 +39,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.zahraag.pawsitivehabits.BottomNavItem
 import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
@@ -127,7 +128,7 @@ fun MainScreen(onNavigateToAddPet: () -> Unit){
             }
             composable(BottomNavItem.Pets.route) {
                 PetScreen(
-                    pets = emptyList(),
+                    pets = samplePets,
                     selectedPetId = null,
                     onSelectPet = { selectedId -> /* Update selected pet */ },
                     onAddPetSubmitted = { newPet -> /* Save pet */ }
@@ -137,7 +138,7 @@ fun MainScreen(onNavigateToAddPet: () -> Unit){
                 //AgendaScreen()
             }
             composable(BottomNavItem.Features.route) {
-                //FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
+                FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
             }
             composable("weight") {
                 //WeightTrackerScreen(onOpenAddDialog = { navController.navigate("add_weight") })

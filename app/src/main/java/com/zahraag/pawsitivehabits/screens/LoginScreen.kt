@@ -90,7 +90,6 @@ fun LoginScreen (
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Email
                     OutlinedTextField(
                         value = email,
                         onValueChange = { email = it },
@@ -103,7 +102,6 @@ fun LoginScreen (
 
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    // Password
                     OutlinedTextField(
                         value = password,
                         onValueChange = { password = it },

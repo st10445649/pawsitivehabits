@@ -67,6 +67,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.zahraag.pawsitivehabits.LabelText
 import com.zahraag.pawsitivehabits.MintInputField
 import com.zahraag.pawsitivehabits.R
@@ -78,6 +79,8 @@ import com.zahraag.pawsitivehabits.ui.theme.MintPrimary
 import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import com.zahraag.pawsitivehabits.ui.theme.TextMuted
+import com.github.skydoves.colorpicker.compose.HsvColorPicker
+import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -229,26 +232,16 @@ fun PetProfileCard(
 
             if (pet.microchipId != null) {
                 Spacer(modifier = Modifier.height(6.dp))
-                Chip(text = "Chip: ${pet.microchipId}")
+                Text(
+                    text = "${pet.petType} • ${pet.microchipId ?: " "}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextMuted
+                )
             }
         }
     }
 }
 
-@Composable
-fun Chip(text: String) {
-    Surface(
-        color = MintBackground,
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = MintDarkGreen,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-        )
-    }
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -275,8 +268,8 @@ fun AddPetScreen(
     var petTypeExpanded by remember { mutableStateOf(false) }
     var genderExpanded by remember { mutableStateOf(false) }
 
-    val petTypeOptions = listOf("Cat", "Dog", "Bird", "Rabbit", "Reptile", "Other")
-    val genderOptions = listOf("Female", "Male")
+    val petTypeOptions = listOf("Cat", "Dog", "Bird", "Rabbit", "Other")
+    val genderOptions = listOf("Female", "Male", "Unknown")
 
     Scaffold(
         topBar = {
@@ -296,7 +289,7 @@ fun AddPetScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null,
-                            tint = Color.White, modifier = Modifier.size(32.dp)
+                            tint = MintDarkGreen, modifier = Modifier.size(50.dp)
                         )
                     }
                 },
@@ -546,12 +539,12 @@ fun AddPetScreen(
                         text = "Pet Theme",
                         fontWeight = FontWeight.Bold,
                         color = MintDarkGreen,
-                        fontSize = 16.sp
+                        fontSize = 14.sp
                     )
                     Text(
                         text = "Select a colour to associate with your pet below",
                         style = MaterialTheme.typography.bodySmall,
-                        color = MintDarkGreen.copy(alpha = 0.7f),
+                        color = MintDarkGreen,
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
@@ -559,21 +552,7 @@ fun AddPetScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // Rainbow spectrum wheel icon representation
-                        Box(
-                            modifier = Modifier
-                                .size(70.dp)
-                                .clip(CircleShape)
-                                .background(MintDarkGreen)
-                        )
-
-                        // Color Preview Block
-                        Box(
-                            modifier = Modifier
-                                .size(width = 90.dp, height = 70.dp)
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(Color(selectedColorHex))
-                        )
+                        PetColorPickerSection()
                     }
                 }
             }
@@ -586,7 +565,8 @@ fun AddPetScreen(
                 TextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    placeholder = { Text("Enter additional notes...", color = MintDarkGreen.copy(alpha = 0.5f)) },
+                    placeholder = { Text("Enter additional notes...", color = MintDarkGreen.copy(alpha = 0.5f),
+                        style= MaterialTheme.typography.bodySmall) },
                     colors = TextFieldDefaults.colors(
                         focusedContainerColor = MintCardSurface.copy(alpha = 0.6f),
                         unfocusedContainerColor = MintCardSurface.copy(alpha = 0.6f),
@@ -635,5 +615,33 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(32.dp))
         }
+    }
+}
+
+@Composable
+fun PetColorPickerSection() {
+    val controller = rememberColorPickerController()
+
+    var selectedColor by remember { mutableStateOf(Color.White) }
+
+    Row(
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+
+        HsvColorPicker(
+            modifier = Modifier.size(100.dp),
+            controller = controller,
+            onColorChanged = { colorEnvelope ->
+                selectedColor = colorEnvelope.color
+            }
+        )
+        Box(
+            modifier = Modifier
+                .padding(horizontal= 20.dp)
+                .size(100.dp)
+                .clip(shape= CircleShape)
+                .background(selectedColor)
+        )
     }
 }

@@ -68,4 +68,8 @@ dependencies {
 
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
+
+    //colour picker
+    implementation("com.github.skydoves:colorpicker-compose:1.2.0")
+
 }
