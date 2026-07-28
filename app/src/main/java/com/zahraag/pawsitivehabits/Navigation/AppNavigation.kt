@@ -59,9 +59,7 @@ fun AppNavigation() {
 
         composable("main") {
             MainScreen(
-                onNavigateToAddPet = {
-                    navController.navigate("add_pet")
-                }
+
             )
         }
 

@@ -14,7 +14,7 @@ android {
 
     defaultConfig {
         applicationId = "com.zahraag.pawsitivehabits"
-        minSdk = 24
+        minSdk = 26
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -71,5 +71,8 @@ dependencies {
 
     //colour picker
     implementation("com.github.skydoves:colorpicker-compose:1.2.0")
+
+    //calendar package
+    implementation("com.kizitonwose.calendar:compose:2.10.1")
 
 }

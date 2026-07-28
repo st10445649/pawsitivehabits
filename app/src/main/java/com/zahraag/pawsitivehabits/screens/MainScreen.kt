@@ -48,7 +48,7 @@ import com.zahraag.pawsitivehabits.ui.theme.TextDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(onNavigateToAddPet: () -> Unit){
+fun MainScreen(){
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -135,7 +135,10 @@ fun MainScreen(onNavigateToAddPet: () -> Unit){
                 )
             }
             composable(BottomNavItem.Agenda.route) {
-                //AgendaScreen()
+                AgendaScreen(
+                    onNavigateBack = {},
+                    onNavigateToAddRoutine = { },
+                )
             }
             composable(BottomNavItem.Features.route) {
                 FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
