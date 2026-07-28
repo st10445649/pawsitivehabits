@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.R.attr.fontWeight
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -52,20 +54,12 @@ fun RegisterScreen(
                 horizontalArrangement = Arrangement.Start
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.petnav),
+                    painter = painterResource(id = R.drawable.greenpaws),
                     contentDescription = null,
                     tint = MintDarkGreen.copy(alpha = 0.7f),
-                    modifier = Modifier.size(36.dp)
+                    modifier = Modifier.size(50.dp)
                 )
-                Spacer(modifier = Modifier.width(8.dp))
-                Icon(
-                    painter = painterResource(id = R.drawable.petnav),
-                    contentDescription = null,
-                    tint = MintDarkGreen.copy(alpha = 0.7f),
-                    modifier = Modifier
-                        .size(48.dp)
-                        .offset(y = (-12).dp)
-                )
+
             }
 
             // Main card with inputs
@@ -177,7 +171,9 @@ fun UnderlineInputField(
         value = value,
         onValueChange = onValueChange,
         placeholder = { Text(placeholder, color = MintDarkGreen.copy(alpha = 0.6f),
-            style = MaterialTheme.typography.bodySmall) },
+            fontWeight = FontWeight.SemiBold,
+            style = MaterialTheme.typography.bodySmall)
+                      },
         visualTransformation = if (isPassword && !isPasswordVisible) PasswordVisualTransformation() else VisualTransformation.None,
         trailingIcon = {
             if (isPassword && onTogglePassword != null) {

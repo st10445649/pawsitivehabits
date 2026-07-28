@@ -3,9 +3,11 @@ package com.zahraag.pawsitivehabits.screens
 import android.R.attr.fontWeight
 import android.R.attr.onClick
 import android.R.attr.text
+import android.text.format.DateUtils.isToday
 import android.view.RoundedCorner
 import android.widget.Space
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +35,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
@@ -67,7 +70,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.modifier.modifierLocalMapOf
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -88,9 +93,13 @@ import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import com.zahraag.pawsitivehabits.ui.theme.TextMuted
+import kotlinx.coroutines.launch
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 
 @Composable
 fun AgendaScreen(
@@ -215,7 +224,50 @@ fun CalendarView(
     val selectedDayItems = itemsByDate[selectedDate] ?: emptyList()
     val dateFormatter = DateTimeFormatter.ofPattern("EEEE, D MMMM yyyy")
 
-    Column(modifier = Modifier.fillMaxWidth()) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        val visibleMonth = calendarState.firstVisibleMonth.yearMonth
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+
+        ){
+            IconButton(
+                onClick ={
+                    coroutineScope.launch {
+                        calendarState.animateScrollToMonth(visibleMonth.minusMonths(1))
+                    }
+                }
+            ){
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month", tint = MintDarkGreen
+                , modifier = Modifier.size(20.dp))
+            }
+            Text(
+                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${visibleMonth.year}",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MintDarkGreen
+            )
+
+            IconButton(
+                onClick ={
+                    coroutineScope.launch {
+                        calendarState.animateScrollToMonth(visibleMonth.plusMonths((1)))
+                    }
+                }
+            ){
+                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Previous Month", tint = MintDarkGreen
+                        , modifier = Modifier.size(20.dp))
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+
+        DaysOfWeekHeader(firstDayOfWeek = calendarState.firstDayOfWeek)
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+
         HorizontalCalendar(
             state = calendarState,
             dayContent = {
@@ -224,6 +276,7 @@ fun CalendarView(
                 CalendarDayCell(
                     day=day,
                     isSelected = selectedDate == day.date,
+                    isToday = day.date == today,
                     hasItems = hasItems,
                     onClick = {selectedDate = day.date}
                 )
@@ -287,9 +340,32 @@ fun CalendarView(
 }
 
 @Composable
+fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
+    val daysOfWeek = remember(firstDayOfWeek) {
+        val days = DayOfWeek.values()
+        val index = days.indexOf(firstDayOfWeek)
+        days.copyOfRange(index, days.size) + days.copyOfRange(0, index)
+    }
+
+    Row(modifier = Modifier.fillMaxWidth()) {
+        for (dayOfWeek in daysOfWeek) {
+            Text(
+                modifier = Modifier.weight(1f),
+                textAlign = TextAlign.Center,
+                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = MintDarkGreen.copy(alpha = 0.6f)
+            )
+        }
+    }
+}
+
+@Composable
 fun CalendarDayCell(
     day: CalendarDay,
     isSelected: Boolean,
+    isToday: Boolean,
     hasItems: Boolean,
     onClick: () -> Unit
 ){
@@ -301,6 +377,11 @@ fun CalendarDayCell(
         modifier = Modifier
             .aspectRatio(1f)
             .clip(CircleShape)
+            .then(
+                if (isToday && !isSelected) {
+                    Modifier.border(2.dp, MintDarkGreen, CircleShape)
+                } else Modifier
+            )
             .background( if (isSelected) MintDarkGreen else Color.Transparent)
             .clickable(enabled = isCurrentMonth) {onClick()}
             .padding(2.dp)
@@ -308,7 +389,7 @@ fun CalendarDayCell(
         Text(
             text = day.date.dayOfMonth.toString(),
             fontSize =  15.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else
+            fontWeight = if (isSelected || isToday) FontWeight.Bold else
             FontWeight.Normal,
             color = when { isSelected -> SurfaceWhite
                 isCurrentMonth -> MintDarkGreen
@@ -434,7 +515,7 @@ fun AgendaTabButton(
 
 @Composable
 fun AddRoutineScreen(
-    petsMap: Map<String, String> = mapOf("pet1" to "Nala", "pet2" to "Milo"), // petId to petName
+    petsMap: Map<String, String> = mapOf("pet1" to "Nala", "pet2" to "Milo"),
     currentUserId: String = "user123",
     onNavigateBack: () -> Unit,
     onSaveRoutine: (Routine) -> Unit

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -46,6 +47,10 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.sp
+import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,59 +71,56 @@ fun LoginScreen (
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
+
         Card(
             shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+            colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         modifier = Modifier.fillMaxWidth()
             ) {
+            Icon(
+                painter = painterResource(id = R.drawable.greenpaws),
+                contentDescription = null,
+                tint = MintDarkGreen.copy(alpha = 0.7f),
+                modifier = Modifier.size(200.dp)
+            )
                 Column(
                     modifier = Modifier.padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+
                     Text(
                         text = "Welcome Back",
-                        style = MaterialTheme.typography.headlineMedium.copy(
-
-                        )
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MintDarkGreen
                     )
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
                     Text(
                         text = "Log in to manage your pets",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextMuted
+                        color = MintDarkGreen
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    OutlinedTextField(
+                    UnderlineInputField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("Email Address") },
-                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        placeholder = "Email"
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                    OutlinedTextField(
+                    UnderlineInputField(
                         value = password,
                         onValueChange = { password = it },
-                        label = { Text("Password") },
-                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
-                        trailingIcon = {
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(
-                                    if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                                    contentDescription = "Toggle Password"
-                                )
-                            }
-                        },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        singleLine = true,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.fillMaxWidth()
+                        placeholder = "Password",
+                        isPassword = true,
+                        isPasswordVisible = passwordVisible,
+                        onTogglePassword = { passwordVisible = !passwordVisible }
                     )
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -135,7 +137,7 @@ fun LoginScreen (
                         Text("LOGIN", color = SurfaceWhite, fontWeight = FontWeight.Bold)
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Google SSO Button
                     OutlinedButton(
@@ -146,13 +148,15 @@ fun LoginScreen (
                             .fillMaxWidth()
                             .height(50.dp)
                     ) {
+                        Icon(painter = painterResource(id=R.drawable.googleicon),
+                            contentDescription = null)
                         Text("Sign In with Google", color = TextDark, fontWeight = FontWeight.SemiBold)
                     }
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
                     TextButton(onClick = onNavigateToSignUp) {
-                        Text("Don't have an account? Sign Up", color = MintDarkGreen)
+                        Text("Don't have an account? Sign Up Here", color = MintDarkGreen, fontSize = 12.sp)
                     }
                 }
         }
