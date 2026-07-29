@@ -1,5 +1,8 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.R.attr.bottom
+import android.R.attr.text
+import android.R.attr.y
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -8,6 +11,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -47,6 +51,7 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
@@ -78,14 +83,12 @@ fun LoginScreen (
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
                         modifier = Modifier.fillMaxWidth()
             ) {
-            Icon(
-                painter = painterResource(id = R.drawable.greenpaws),
-                contentDescription = null,
-                tint = MintDarkGreen.copy(alpha = 0.7f),
-                modifier = Modifier.size(200.dp)
-            )
+
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.padding(top = 40.dp,
+                        bottom = 24.dp,
+                        start = 24.dp,
+                        end = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
@@ -143,14 +146,15 @@ fun LoginScreen (
                     OutlinedButton(
                         onClick = onGoogleSignInClick,
                         shape = RoundedCornerShape(20.dp),
-                        border = BorderStroke(1.dp, MintPrimary),
+                        colors = ButtonDefaults.buttonColors(containerColor = SurfaceWhite),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
                     ) {
-                        Icon(painter = painterResource(id=R.drawable.googleicon),
-                            contentDescription = null)
-                        Text("Sign In with Google", color = TextDark, fontWeight = FontWeight.SemiBold)
+                        Icon(painter = painterResource(id=R.drawable.google),
+                            contentDescription = null,
+                            tint = Color.Unspecified)
+                        Text("  Sign In with Google", color = TextDark, fontWeight = FontWeight.SemiBold)
                     }
 
                     Spacer(modifier = Modifier.height(24.dp))
@@ -159,6 +163,18 @@ fun LoginScreen (
                         Text("Don't have an account? Sign Up Here", color = MintDarkGreen, fontSize = 12.sp)
                     }
                 }
+
+
         }
+
+        Icon(
+            painter = painterResource(id = R.drawable.greenpaws),
+            contentDescription = null,
+            tint = MintDarkGreen,
+            modifier = Modifier.size(160.dp). offset(
+                y= 270.dp,
+                x = 100.dp
+            )
+        )
     }
 }

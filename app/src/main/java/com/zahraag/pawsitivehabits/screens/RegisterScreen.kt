@@ -46,22 +46,6 @@ fun RegisterScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.Start) {
-            // Paw print decor
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 16.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.greenpaws),
-                    contentDescription = null,
-                    tint = MintDarkGreen.copy(alpha = 0.7f),
-                    modifier = Modifier.size(50.dp)
-                )
-
-            }
-
             // Main card with inputs
             Card(
                 shape = RoundedCornerShape(32.dp),
@@ -154,6 +138,15 @@ fun RegisterScreen(
                 }
             }
         }
+        Icon(
+            painter = painterResource(id = R.drawable.greenpaws),
+            contentDescription = null,
+            tint = MintDarkGreen,
+            modifier = Modifier.size(160.dp). offset(
+                y= (-300).dp,
+                x = (-90).dp
+            )
+        )
     }
 }
 
