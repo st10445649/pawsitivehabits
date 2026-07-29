@@ -3,6 +3,7 @@ package com.zahraag.pawsitivehabits.screens
 import android.R.attr.fontWeight
 import android.R.attr.onClick
 import android.R.attr.text
+import android.R.attr.type
 import android.text.format.DateUtils.isToday
 import android.view.RoundedCorner
 import android.widget.Space
@@ -71,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.modifier.modifierLocalMapOf
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.LineHeightStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -100,6 +102,8 @@ import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.data.RoutineTypeOption
 
 @Composable
 fun AgendaScreen(
@@ -442,7 +446,7 @@ fun AgendaCard(
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = title, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(text = "🐾 $petName  •  ⏰ $timeStr", fontSize = 13.sp, color = TextMuted)
+                Text(text = "$petName  • $timeStr", fontSize = 13.sp, color = TextMuted)
             }
 
             Surface(
@@ -532,7 +536,16 @@ fun AddRoutineScreen(
     var startDate by remember { mutableStateOf(LocalDate.now()) }
     var showInCalendar by remember { mutableStateOf(true) }
 
-    val routineTypes = listOf("Bath", "Ear Cleaning", "Teeth Cleaning", "Brushing", "Nail Trimming", "Custom")
+    val routineTypes = remember {
+        listOf(
+            RoutineTypeOption("Bath", R.drawable.bathroutine),
+            RoutineTypeOption("Ear Cleaning", R.drawable.earroutine),
+            RoutineTypeOption("Teeth Cleaning", R.drawable.teethroutine),
+            RoutineTypeOption("Brushing", R.drawable.brushroutine),
+            RoutineTypeOption("Nail Trimming", R.drawable.nailtrimroutine),
+            RoutineTypeOption("Custom", R.drawable.customroutine)
+        )
+    }
     val daysList = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     Box(
         modifier = Modifier
@@ -548,7 +561,8 @@ fun AddRoutineScreen(
             // Header
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = MintDarkGreen)
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back", tint = MintDarkGreen,
+                        modifier = Modifier.size(50.dp))
                 }
                 Spacer(modifier = Modifier.weight(1f))
                 Text("New Routine", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MintDarkGreen)
@@ -558,7 +572,7 @@ fun AddRoutineScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             //Pet Dropdown
-            Text("Pet *", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Text("Pet", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(8.dp))
             Box {
                 Card(
@@ -572,7 +586,12 @@ fun AddRoutineScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("🐾  ${petsMap[selectedPetId] ?: "Select Pet"}", fontWeight = FontWeight.Medium, color = TextDark)
+                        Icon(
+                            painter = painterResource(id = R.drawable.greenpaws),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp))
+                        Text(" ${petsMap[selectedPetId] ?: "Select Pet"}", fontWeight = FontWeight.Medium, color = TextDark)
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MintDarkGreen)
                     }
@@ -605,17 +624,33 @@ fun AddRoutineScreen(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 routineTypes.forEach { type ->
-                    val isSelected = selectedRoutineType == type
+                    val isSelected = selectedRoutineType == type.name
                     FilterChip(
                         selected = isSelected,
-                        onClick = { selectedRoutineType = type },
-                        label = { Text(type, color = if (isSelected) SurfaceWhite else MintDarkGreen) },
-                        leadingIcon = if (isSelected) {
-                            { Icon(Icons.Default.Check, contentDescription = null, tint = SurfaceWhite) }
-                        } else null,
+                        onClick = { selectedRoutineType = type.name },
+                        label = { Text(type.name, color = if (isSelected) SurfaceWhite else MintDarkGreen, fontWeight = FontWeight.SemiBold, fontSize = 14.sp) },
+                        leadingIcon = {
+                            if(isSelected) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = SurfaceWhite, modifier = Modifier.size(18.dp))
+                            } else {
+                                Icon(
+                                    painter = painterResource(id=type.iconRes),
+                                    tint = Color.Unspecified,
+                                    contentDescription = type.name,
+                                    modifier = Modifier.size(25.dp)
+                                )
+                            }
+                        },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MintDarkGreen,
-                            containerColor = MintCardSurface
+                            containerColor = MintCardSurface,
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = MintCardSurface,
+                            selectedBorderColor = MintDarkGreen,
+                            borderWidth = 1.dp
                         ),
                         shape = RoundedCornerShape(16.dp)
                     )
@@ -627,7 +662,8 @@ fun AddRoutineScreen(
                 OutlinedTextField(
                     value = customRoutineText,
                     onValueChange = { customRoutineText = it },
-                    placeholder = { Text("Type custom routine...", color = MintDarkGreen.copy(alpha = 0.5f)) },
+                    placeholder = { Text("Type custom routine...", color = MintDarkGreen.copy(alpha = 0.3f),
+                        fontWeight = FontWeight.SemiBold) },
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MintDarkGreen,
@@ -655,7 +691,8 @@ fun AddRoutineScreen(
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text(freq, color = if (isSelected) SurfaceWhite else MintDarkGreen)
+                        Text(freq, color = if (isSelected) SurfaceWhite else MintDarkGreen,
+                            fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
                     }
                 }
             }
@@ -681,7 +718,7 @@ fun AddRoutineScreen(
                                 selectedDays = if (isSelected) selectedDays - day else selectedDays + day
                             }
                     ) {
-                        Text(day, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = if (isSelected) SurfaceWhite else MintDarkGreen)
+                        Text(day, fontSize = 14.sp, fontWeight = FontWeight.Bold, color = if (isSelected) SurfaceWhite else MintDarkGreen)
                     }
                 }
             }
@@ -705,7 +742,8 @@ fun AddRoutineScreen(
                     Switch(
                         checked = showInCalendar,
                         onCheckedChange = { showInCalendar = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = SurfaceWhite, checkedTrackColor = MintDarkGreen)
+                        colors = SwitchDefaults.colors(checkedThumbColor = SurfaceWhite, checkedTrackColor = MintDarkGreen,
+                            uncheckedThumbColor = SurfaceWhite, uncheckedIconColor = MintBackground, uncheckedBorderColor = MintDarkGreen)
                     )
                 }
             }

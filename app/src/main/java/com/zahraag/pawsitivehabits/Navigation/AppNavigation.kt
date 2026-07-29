@@ -23,7 +23,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "Login"
+    val startDestination = "add_routine"
 
     NavHost(
         navController = navController,
