@@ -7,6 +7,8 @@ val MintCardSurface = Color(0xFFC3F3DF)
 val MintPrimary = Color(0xFF68C3A3)
 val MintDarkGreen = Color(0xFF336C5B)
 
+val MintMediumGreen = Color(0xFF67BA95)
+
 // Accent Colors for Cards & Tags
 val PetCardPurple = Color(0xFFD6B0FF)
 val PetCardOrange = Color(0xFFFFB980)

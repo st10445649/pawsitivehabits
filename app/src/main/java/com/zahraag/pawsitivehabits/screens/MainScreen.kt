@@ -147,6 +147,12 @@ fun MainScreen(){
                 //WeightTrackerScreen(onOpenAddDialog = { navController.navigate("add_weight") })
             }
 
+            composable("weight") {
+               WeightScreen(
+                   onNavigateBack = {}
+               ) { }
+            }
+
         }
     }
 

@@ -16,6 +16,7 @@ import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
+import com.zahraag.pawsitivehabits.screens.WeightScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -23,7 +24,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "login"
+    val startDestination = "weight"
 
     NavHost(
         navController = navController,
@@ -96,6 +97,15 @@ fun AppNavigation() {
                 onNavigateBack = { navController.popBackStack() },
                 onSaveRoutine = {}
             )
+        }
+
+        composable("weight") {
+            WeightScreen(
+                petsMap = emptyMap(),
+                weightList = emptyList(),
+                currentUserId = "user123",
+                onNavigateBack = { navController.popBackStack() },
+            ) { }
         }
     }
 }

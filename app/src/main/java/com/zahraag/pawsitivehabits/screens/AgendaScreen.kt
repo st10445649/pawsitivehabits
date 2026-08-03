@@ -104,6 +104,7 @@ import java.time.format.TextStyle
 import java.util.Locale
 import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.data.RoutineTypeOption
+import java.util.Locale.getDefault
 
 @Composable
 fun AgendaScreen(
@@ -226,7 +227,7 @@ fun CalendarView(
     }
 
     val selectedDayItems = itemsByDate[selectedDate] ?: emptyList()
-    val dateFormatter = DateTimeFormatter.ofPattern("EEEE, D MMMM yyyy")
+    val dateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy")
 
     Column(modifier = Modifier.fillMaxSize()) {
         val visibleMonth = calendarState.firstVisibleMonth.yearMonth
@@ -247,7 +248,7 @@ fun CalendarView(
                 , modifier = Modifier.size(20.dp))
             }
             Text(
-                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, Locale.getDefault())} ${visibleMonth.year}",
+                text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, getDefault())} ${visibleMonth.year}",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
                 color = MintDarkGreen
@@ -356,7 +357,7 @@ fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
             Text(
                 modifier = Modifier.weight(1f),
                 textAlign = TextAlign.Center,
-                text = dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()),
+                text = dayOfWeek.getDisplayName(TextStyle.SHORT, getDefault()),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
                 color = MintDarkGreen.copy(alpha = 0.6f)

@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     id("com.google.devtools.ksp") version "2.3.4"
+    kotlin("plugin.serialization") version "2.3.21"
 }
 
 android {
@@ -74,5 +75,12 @@ dependencies {
 
     //calendar package
     implementation("com.kizitonwose.calendar:compose:2.10.1")
+
+    //vico graphs
+    val vico = "2.0.0"
+    implementation("com.patrykandpatrick.vico:compose-m2:${vico}")
+    implementation("com.patrykandpatrick.vico:compose-m3:$vico" )
+    implementation("com.patrykandpatrick.vico:compose:$vico")
+    implementation("com.patrykandpatrick.vico:views:${vico}")
 
 }
