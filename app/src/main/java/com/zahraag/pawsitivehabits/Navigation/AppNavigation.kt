@@ -9,12 +9,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
+import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
 import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
 import com.zahraag.pawsitivehabits.screens.AgendaScreen
 import com.zahraag.pawsitivehabits.screens.ExpenseScreen
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
+import com.zahraag.pawsitivehabits.screens.MedicalRecordsScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
@@ -26,7 +28,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "expenses"
+    val startDestination = "medical_record"
 
     NavHost(
         navController = navController,
@@ -127,6 +129,27 @@ fun AppNavigation() {
                 onNavigateBack= { navController.popBackStack() },
                 onSaveExpense= {},
                 onDeleteExpense ={})
+        }
+
+
+        composable("medical_record"){
+            MedicalRecordsScreen(
+                medicalList = emptyList(),
+                petsMap = emptyMap(),
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToAddRecord = { navController.navigate("add_medical_record") },
+                onNavigateToEditRecord = { navController.navigate("add_medical_record") },
+            ) { }
+        }
+
+        composable("add_medical_record"){
+            AddEditMedicalRecordScreen(
+                petsMap = emptyMap(),
+                onNavigateBack = { navController.popBackStack() },
+                existingRecord = null,
+                currentUserId = "user123",
+                onSaveRecord = { }
+            ) { }
         }
     }
 }

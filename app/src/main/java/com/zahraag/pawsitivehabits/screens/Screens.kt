@@ -9,4 +9,6 @@ sealed class Screen(val route: String) {
     object AddExpenses: Screen("add_expense")
     object Expenses : Screen("expenses")
     object Weight : Screen("weight")
+    object MedicalRecord : Screen("medical_record")
+    object AddMedicalRecord : Screen("add_medical_record")
 }
