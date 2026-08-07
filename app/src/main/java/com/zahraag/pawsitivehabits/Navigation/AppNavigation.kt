@@ -9,8 +9,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
+import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
 import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
 import com.zahraag.pawsitivehabits.screens.AgendaScreen
+import com.zahraag.pawsitivehabits.screens.ExpenseScreen
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
@@ -24,7 +26,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "weight"
+    val startDestination = "expenses"
 
     NavHost(
         navController = navController,
@@ -106,6 +108,25 @@ fun AppNavigation() {
                 currentUserId = "user123",
                 onNavigateBack = { navController.popBackStack() },
             ) { }
+        }
+
+        composable("expenses") {
+            ExpenseScreen(
+                onNavigateBack = { navController.popBackStack() },
+                expensesList = emptyList(),
+                petsMap = emptyMap(),
+                onNavigateToAddExpense = { navController.navigate("add_expense") },
+                onNavigateToEditExpense = { navController.navigate("add_routine") }
+            ) { }
+        }
+
+        composable("add_expense"){
+            AddExpenseScreen(existingExpense =null,
+                petsMap= emptyMap(),
+                currentUserId ="user123",
+                onNavigateBack= { navController.popBackStack() },
+                onSaveExpense= {},
+                onDeleteExpense ={})
         }
     }
 }
