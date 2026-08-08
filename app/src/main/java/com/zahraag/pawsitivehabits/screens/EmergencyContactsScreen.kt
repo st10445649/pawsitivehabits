@@ -111,7 +111,7 @@ fun EmergencyContactsScreen(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
                         tint = MintDarkGreen,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier.size(50.dp)
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))

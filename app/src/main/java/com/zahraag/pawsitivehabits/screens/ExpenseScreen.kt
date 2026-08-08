@@ -81,7 +81,7 @@ fun ExpenseScreen(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
                         tint = MintDarkGreen,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(50.dp)
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -402,7 +402,7 @@ fun AddExpenseScreen(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
                         tint = MintDarkGreen,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(50.dp)
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
