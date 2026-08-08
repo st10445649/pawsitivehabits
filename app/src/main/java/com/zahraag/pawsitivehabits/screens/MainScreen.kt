@@ -35,6 +35,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.zahraag.pawsitivehabits.BottomNavItem
@@ -48,7 +49,7 @@ import com.zahraag.pawsitivehabits.ui.theme.TextDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScreen(){
+fun MainScreen(rootnavController: NavHostController){
 
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -136,21 +137,15 @@ fun MainScreen(){
             }
             composable(BottomNavItem.Agenda.route) {
                 AgendaScreen(
-                    onNavigateBack = {},
-                    onNavigateToAddRoutine = { },
+                    routinesList = emptyList(),
+                    calendarEventsList = emptyList(),
+                    petNamesMap = emptyMap(),
+                    onNavigateBack = {navController.popBackStack()},
+                    onNavigateToAddRoutine = {rootnavController.navigate(Screen.AddRoutine.route) },
                 )
             }
             composable(BottomNavItem.Features.route) {
-                FeaturesScreen(onFeatureClick = { route -> navController.navigate(route) })
-            }
-            composable("weight") {
-                //WeightTrackerScreen(onOpenAddDialog = { navController.navigate("add_weight") })
-            }
-
-            composable("weight") {
-               WeightScreen(
-                   onNavigateBack = {}
-               ) { }
+                FeaturesScreen(onFeatureClick = { route -> rootnavController.navigate(route) })
             }
 
         }

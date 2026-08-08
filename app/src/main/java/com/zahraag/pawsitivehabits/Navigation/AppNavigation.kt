@@ -9,10 +9,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
+import com.zahraag.pawsitivehabits.data.UserSettings
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
 import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
 import com.zahraag.pawsitivehabits.screens.AgendaScreen
+import com.zahraag.pawsitivehabits.screens.EmergencyContactsScreen
 import com.zahraag.pawsitivehabits.screens.ExpenseScreen
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
@@ -21,47 +23,47 @@ import com.zahraag.pawsitivehabits.screens.MemoriesScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
+import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AppNavigation() {
-    val navController = rememberNavController()
+    val rootnavController = rememberNavController()
 
-
-    val startDestination = "memory"
+    val startDestination = "login"
 
     NavHost(
-        navController = navController,
+        navController = rootnavController,
         startDestination = startDestination
     ) {
 
-        composable("login") {
+        composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
 
-                    navController.navigate("main") {
-                        popUpTo("login") { inclusive = true }
+                    rootnavController.navigate("main") {
+                        popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
                 onGoogleSignInClick = {
 
                 },
                 onNavigateToSignUp = {
-                    navController.navigate("register")
+                    rootnavController.navigate(Screen.SignUp.route)
                 }
             )
         }
 
-        composable("register") {
+        composable(Screen.SignUp.route) {
             RegisterScreen(
                 onSignUpSuccess = {
-                    navController.navigate("main") {
-                        popUpTo("register") { inclusive = true }
+                    rootnavController.navigate("main") {
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
                     }
                 },
                 onNavigateToLogin = {
-                    navController.navigate("login")
+                    rootnavController.navigate(Screen.Login.route)
                 }
             )
         }
@@ -69,12 +71,12 @@ fun AppNavigation() {
 
         composable("main") {
             MainScreen(
-
+rootnavController = rootnavController
             )
         }
 
 
-        composable("add_pet") {
+        composable(Screen.AddPet.route) {
             PetScreen(
                 pets= samplePets,
                 selectedPetId= null,
@@ -83,84 +85,102 @@ fun AppNavigation() {
            )
         }
 
-        composable("agenda") {
-
+        composable(Screen.Agenda.route) {
             AgendaScreen(
                 routinesList = emptyList(),
                 calendarEventsList = emptyList(),
                 petNamesMap = emptyMap(),
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToAddRoutine = { navController.navigate("add_routine") }
+                onNavigateBack = { rootnavController.popBackStack() },
+                onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) }
             )
         }
 
-        composable("add_routine") {
-
+        composable(Screen.AddRoutine.route) {
             AddRoutineScreen(
                 petsMap = emptyMap(),
                 currentUserId = "user123",
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { rootnavController.popBackStack() },
                 onSaveRoutine = {}
             )
         }
 
-        composable("weight") {
+        composable(Screen.Weight.route) {
             WeightScreen(
                 petsMap = emptyMap(),
                 weightList = emptyList(),
                 currentUserId = "user123",
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { rootnavController.popBackStack() },
             ) { }
         }
 
-        composable("expenses") {
+        composable(Screen.Expenses.route) {
             ExpenseScreen(
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { rootnavController.popBackStack() },
                 expensesList = emptyList(),
                 petsMap = emptyMap(),
-                onNavigateToAddExpense = { navController.navigate("add_expense") },
-                onNavigateToEditExpense = { navController.navigate("add_routine") }
+                onNavigateToAddExpense = { rootnavController.navigate(Screen.AddExpenses.route) },
+                onNavigateToEditExpense = { rootnavController.navigate(Screen.AddExpenses.route) }
             ) { }
         }
 
-        composable("add_expense"){
+        composable(Screen.AddExpenses.route){
             AddExpenseScreen(existingExpense =null,
                 petsMap= emptyMap(),
                 currentUserId ="user123",
-                onNavigateBack= { navController.popBackStack() },
+                onNavigateBack= { rootnavController.popBackStack() },
                 onSaveExpense= {},
                 onDeleteExpense ={})
         }
 
 
-        composable("medical_record"){
+        composable(Screen.MedicalRecord.route){
             MedicalRecordsScreen(
                 medicalList = emptyList(),
                 petsMap = emptyMap(),
-                onNavigateBack = { navController.popBackStack() },
-                onNavigateToAddRecord = { navController.navigate("add_medical_record") },
-                onNavigateToEditRecord = { navController.navigate("add_medical_record") },
+                onNavigateBack = { rootnavController.popBackStack() },
+                onNavigateToAddRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
+                onNavigateToEditRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
             ) { }
         }
 
-        composable("add_medical_record"){
+        composable(Screen.AddMedicalRecord.route){
             AddEditMedicalRecordScreen(
                 petsMap = emptyMap(),
-                onNavigateBack = { navController.popBackStack() },
+                onNavigateBack = { rootnavController.popBackStack() },
                 existingRecord = null,
                 currentUserId = "user123",
                 onSaveRecord = { }
             ) { }
         }
 
-        composable("memory"){
+        composable(Screen.Memories.route){
             MemoriesScreen(
                 memoriesList = emptyList(),
                 petsMap = emptyMap(),
                 currentUserId= "user123",
-                onNavigateBack = { navController.popBackStack() },
-                onSaveMemory = { navController.navigate("add_memory") }
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveMemory = { rootnavController.navigate(Screen.Memories.route) }
             ) { }
+        }
+
+        composable(Screen.Settings.route){
+            SettingsScreen(
+                userSettings = UserSettings(id = "user123"),
+                userName = "John Doe",
+                userEmail = "johndoe@gmail.com",
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveSettings = { },
+                onSyncDataClick = { }
+            ) { }
+        }
+
+        composable(Screen.EmergencyContacts.route) {
+            EmergencyContactsScreen(
+                contactsList = emptyList(),
+                onNavigateBack = { rootnavController.popBackStack() },
+                onAddContact = { },
+                onDeleteContact = { }
+            )
         }
 
     }
