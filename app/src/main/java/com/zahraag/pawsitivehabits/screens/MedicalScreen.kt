@@ -58,7 +58,6 @@ import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.data.MedicTypeOption
 import com.zahraag.pawsitivehabits.data.MedicalRecords
-import com.zahraag.pawsitivehabits.data.RoutineTypeOption
 import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground

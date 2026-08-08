@@ -17,6 +17,7 @@ import com.zahraag.pawsitivehabits.screens.ExpenseScreen
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.MedicalRecordsScreen
+import com.zahraag.pawsitivehabits.screens.MemoriesScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
@@ -28,7 +29,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
 
-    val startDestination = "medical_record"
+    val startDestination = "memory"
 
     NavHost(
         navController = navController,
@@ -151,5 +152,16 @@ fun AppNavigation() {
                 onSaveRecord = { }
             ) { }
         }
+
+        composable("memory"){
+            MemoriesScreen(
+                memoriesList = emptyList(),
+                petsMap = emptyMap(),
+                currentUserId= "user123",
+                onNavigateBack = { navController.popBackStack() },
+                onSaveMemory = { navController.navigate("add_memory") }
+            ) { }
+        }
+
     }
 }
