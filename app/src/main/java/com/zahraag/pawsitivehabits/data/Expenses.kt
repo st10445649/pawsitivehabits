@@ -14,6 +14,7 @@ data class Expenses (
     var amount: Double,
     var category: String,
     var date: Long,
+    var notes: String? = "",
 
     @Transient
     var isSynced: Boolean = false

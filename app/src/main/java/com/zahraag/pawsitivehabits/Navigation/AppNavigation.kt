@@ -9,9 +9,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
+import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
+import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
+import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.UserSettings
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
@@ -125,7 +128,7 @@ rootnavController = rootnavController
         composable(Screen.Weight.route) {
             WeightScreen(
                 petsMap = samplePetNamesMap,
-                weightList = emptyList(),
+                weightList = sampleWeightRecords,
                 currentUserId = "user123",
                 onNavigateBack = { rootnavController.popBackStack() },
             ) { }
@@ -134,7 +137,7 @@ rootnavController = rootnavController
         composable(Screen.Expenses.route) {
             ExpenseScreen(
                 onNavigateBack = { rootnavController.popBackStack() },
-                expensesList = emptyList(),
+                expensesList = sampleExpenses,
                 petsMap = samplePetNamesMap,
                 onNavigateToAddExpense = { rootnavController.navigate(Screen.AddExpenses.route) },
                 onNavigateToEditExpense = { rootnavController.navigate(Screen.AddExpenses.route) }
@@ -153,7 +156,7 @@ rootnavController = rootnavController
 
         composable(Screen.MedicalRecord.route){
             MedicalRecordsScreen(
-                medicalList = emptyList(),
+                medicalList = sampleMedicalRecords,
                 petsMap = samplePetNamesMap,
                 onNavigateBack = { rootnavController.popBackStack() },
                 onNavigateToAddRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
