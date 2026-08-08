@@ -44,6 +44,7 @@ import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
+import com.zahraag.pawsitivehabits.data.UserSettings
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
@@ -63,7 +64,7 @@ fun MainScreen(rootnavController: NavHostController){
         BottomNavItem.Pets.route,
         BottomNavItem.Agenda.route,
         BottomNavItem.Features.route,
-        BottomNavItem.Profile.route
+        BottomNavItem.Settings.route
     )
 
     Scaffold(
@@ -78,7 +79,7 @@ fun MainScreen(rootnavController: NavHostController){
                         BottomNavItem.Pets,
                         BottomNavItem.Agenda,
                         BottomNavItem.Features,
-                        BottomNavItem.Profile
+                        BottomNavItem.Settings
                     )
 
                     navItems.forEach { item ->
@@ -152,6 +153,17 @@ fun MainScreen(rootnavController: NavHostController){
             }
             composable(BottomNavItem.Features.route) {
                 FeaturesScreen(onFeatureClick = { route -> rootnavController.navigate(route) })
+            }
+
+            composable(BottomNavItem.Settings.route) {
+                SettingsScreen(
+                    userSettings = UserSettings(id = "user123"),
+                    userName = "John Doe",
+                    userEmail = "johndoe@gmail.com",
+                    onNavigateBack = { rootnavController.popBackStack() },
+                    onSaveSettings = { },
+                    onSyncDataClick = { }
+                ) { }
             }
 
         }

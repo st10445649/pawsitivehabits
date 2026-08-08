@@ -28,7 +28,7 @@ sealed class BottomNavItem(
     object Pets: BottomNavItem("pets", "Pets", R.drawable.petnav)
     object Agenda: BottomNavItem("agenda", "Agenda", R.drawable.calendarnav)
     object Features: BottomNavItem("features", "Features", R.drawable.featuresnav)
-    object Profile: BottomNavItem("setting", "Profile", R.drawable.profilenav)
+    object Settings: BottomNavItem("setting", "Settings", R.drawable.profilenav)
 
 }
 
