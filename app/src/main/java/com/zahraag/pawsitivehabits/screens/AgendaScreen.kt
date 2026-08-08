@@ -592,7 +592,7 @@ fun AddRoutineScreen(
                             contentDescription = null,
                             tint = Color.Unspecified,
                             modifier = Modifier.size(20.dp))
-                        Text(" ${petsMap[selectedPetId] ?: "Select Pet"}", fontWeight = FontWeight.Medium, color = TextDark)
+                        Text(" ${petsMap[selectedPetId] ?: " Select Pet"}", fontWeight = FontWeight.Medium, color = TextDark)
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MintDarkGreen)
                     }

@@ -12,3 +12,8 @@ data class RoutineTypeOption(
     val name: String,
     @DrawableRes val iconRes: Int
 )
+
+data class MedicTypeOption(
+    val name: String,
+    @DrawableRes val iconRes: Int
+)

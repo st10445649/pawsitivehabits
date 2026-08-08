@@ -5,6 +5,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -49,10 +51,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.data.MedicTypeOption
 import com.zahraag.pawsitivehabits.data.MedicalRecords
+import com.zahraag.pawsitivehabits.data.RoutineTypeOption
 import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
@@ -78,7 +84,17 @@ fun MedicalRecordsScreen(
     var selectedTypeFilter by remember { mutableStateOf("All") }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
 
-    val filterTypes = listOf("All", "Vaccine", "Medication", "Treatment", "Surgery", "Check-up", "Exam")
+    val filterTypes = remember {
+        listOf(
+            MedicTypeOption("All", R.drawable.greenpaws),
+            MedicTypeOption("Vaccine", R.drawable.vaccinemed),
+            MedicTypeOption("Medication", R.drawable.medmed),
+            MedicTypeOption("Treatment", R.drawable.treatmentmed),
+            MedicTypeOption("Surgery", R.drawable.surgerymed),
+            MedicTypeOption("Check-up", R.drawable.checkupmed),
+            MedicTypeOption("Exam", R.drawable.exammed),
+        )
+    }
 
     // Filtered Records List
     val filteredRecords = medicalList.filter { record ->
@@ -106,7 +122,7 @@ fun MedicalRecordsScreen(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
                         tint = MintDarkGreen,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(50.dp)
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -143,7 +159,7 @@ fun MedicalRecordsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = if (selectedPetId == null) "🐾 All Pets" else "🐾 ${petsMap[selectedPetId]}",
+                            text = if (selectedPetId == null) "All Pets" else "${petsMap[selectedPetId]}",
                             fontWeight = FontWeight.SemiBold,
                             color = MintDarkGreen
                         )
@@ -158,7 +174,8 @@ fun MedicalRecordsScreen(
                     modifier = Modifier.background(SurfaceWhite)
                 ) {
                     DropdownMenuItem(
-                        text = { Text("🐾 All Pets", color = TextDark) },
+
+                        text = { Text(" All Pets", color = TextDark) },
                         onClick = {
                             selectedPetId = null
                             isPetDropdownExpanded = false
@@ -166,7 +183,7 @@ fun MedicalRecordsScreen(
                     )
                     petsMap.forEach { (id, name) ->
                         DropdownMenuItem(
-                            text = { Text("🐾 $name", color = TextDark) },
+                            text = { Text(" $name", color = TextDark) },
                             onClick = {
                                 selectedPetId = id
                                 isPetDropdownExpanded = false
@@ -183,22 +200,38 @@ fun MedicalRecordsScreen(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 items(filterTypes) { type ->
-                    val isSelected = selectedTypeFilter == type
+                    val isSelected = selectedTypeFilter == type.name
                     FilterChip(
                         selected = isSelected,
-                        onClick = { selectedTypeFilter = type },
+                        onClick = { selectedTypeFilter = type.name },
                         label = {
                             Text(
-                                text = type,
+                                text = type.name,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                                 color = if (isSelected) SurfaceWhite else MintDarkGreen
                             )
+                        },
+                        leadingIcon = {
+
+                                Icon(
+                                    painter = painterResource(id = type.iconRes),
+                                    contentDescription = type.name,
+                                    tint = Color.Unspecified,
+                                    modifier = Modifier.size(20.dp)
+                                )
+
                         },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = MintDarkGreen,
                             containerColor = MintCardSurface
                         ),
-                        border = null,
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = MintCardSurface,
+                            selectedBorderColor = MintDarkGreen,
+                            borderWidth = 1.dp
+                        ),
                         shape = RoundedCornerShape(12.dp)
                     )
                 }
@@ -389,20 +422,24 @@ fun AddEditMedicalRecordScreen(
 
     var selectedPetId by remember { mutableStateOf(existingRecord?.petId ?: petsMap.keys.firstOrNull() ?: "") }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
+    var customMedicText by remember { mutableStateOf("") }
 
-    val typesList = listOf(
-        "Vaccine" to "💉",
-        "Medication" to "💊",
-        "Treatment" to "🏥",
-        "Surgery" to "🔪",
-        "Check-up" to "🩺",
-        "Exam" to "🔬",
-        "Allergy" to "🤧",
-        "Condition" to "📋",
-        "Other" to "📝"
-    )
+    val typesList = remember {
+        listOf(
+            MedicTypeOption("Vaccine", R.drawable.vaccinemed),
+            MedicTypeOption("Medication", R.drawable.medmed),
+            MedicTypeOption("Treatment", R.drawable.treatmentmed),
+            MedicTypeOption("Surgery", R.drawable.surgerymed),
+            MedicTypeOption("Check-up", R.drawable.checkupmed),
+            MedicTypeOption("Exam", R.drawable.exammed),
+            MedicTypeOption("Allergy", R.drawable.allergymed),
+            MedicTypeOption("Condition", R.drawable.conditionmed),
+            MedicTypeOption("Other", R.drawable.customroutine)
+        )
+    }
 
-    var selectedType by remember { mutableStateOf(existingRecord?.category ?: "Vaccine") }
+
+    var selectedType by remember { mutableStateOf( "Vaccine") }
     var titleInput by remember { mutableStateOf(existingRecord?.title ?: "") }
     var reasonInput by remember { mutableStateOf(existingRecord?.reason ?: "") }
 
@@ -431,7 +468,7 @@ fun AddEditMedicalRecordScreen(
                         Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
                         tint = MintDarkGreen,
-                        modifier = Modifier.size(28.dp)
+                        modifier = Modifier.size(50.dp)
                     )
                 }
                 Spacer(modifier = Modifier.weight(1f))
@@ -462,8 +499,7 @@ fun AddEditMedicalRecordScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 1. Pet Dropdown Selector
-            Text("Pet *", fontWeight = FontWeight.SemiBold, color = MintDarkGreen, fontSize = 14.sp)
+            Text("Pet", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(6.dp))
 
             Box {
@@ -478,8 +514,13 @@ fun AddEditMedicalRecordScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.greenpaws),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp))
                         Text(
-                            text = "🐾 ${petsMap[selectedPetId] ?: "Select Pet"}",
+                            text = "${petsMap[selectedPetId] ?: "Select Pet"}",
                             color = MintDarkGreen,
                             fontWeight = FontWeight.SemiBold
                         )
@@ -495,7 +536,7 @@ fun AddEditMedicalRecordScreen(
                 ) {
                     petsMap.forEach { (id, name) ->
                         DropdownMenuItem(
-                            text = { Text("🐾 $name", color = TextDark) },
+                            text = { Text("$name", color = TextDark) },
                             onClick = {
                                 selectedPetId = id
                                 isPetDropdownExpanded = false
@@ -508,54 +549,71 @@ fun AddEditMedicalRecordScreen(
             Spacer(modifier = Modifier.height(18.dp))
 
             // 2. Medical Record Type Selector Grid
-            Text("Type", fontWeight = FontWeight.SemiBold, color = MintDarkGreen, fontSize = 14.sp)
+            Text("Type", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Non-scrollable grid via standard layout chunking
-            typesList.chunked(3).forEach { row ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
-                ) {
-                    row.forEach { (type, emoji) ->
-                        val isSelected = selectedType == type
-                        Card(
-                            shape = RoundedCornerShape(12.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = if (isSelected) MintDarkGreen else MintCardSurface
-                            ),
-                            modifier = Modifier
-                                .weight(1f)
-                                .clickable { selectedType = type }
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(vertical = 10.dp, horizontal = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Center
-                            ) {
-                                Text(text = emoji, fontSize = 14.sp)
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = type,
-                                    fontSize = 12.sp,
-                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                    color = if (isSelected) SurfaceWhite else MintDarkGreen
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                typesList.forEach { type ->
+                    val isSelected = selectedType == type.name
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { selectedType = type.name },
+                        label = { Text(type.name, color = if (isSelected) SurfaceWhite else MintDarkGreen, fontWeight = FontWeight.SemiBold, fontSize = 12.sp) },
+                        leadingIcon = {
+                            if(isSelected) {
+                                Icon(Icons.Default.Check, contentDescription = null, tint = SurfaceWhite, modifier = Modifier.size(18.dp))
+                            } else {
+                                Icon(
+                                    painter = painterResource(id=type.iconRes),
+                                    tint = Color.Unspecified,
+                                    contentDescription = type.name,
+                                    modifier = Modifier.size(25.dp)
                                 )
                             }
-                        }
-                    }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MintDarkGreen,
+                            containerColor = MintCardSurface,
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = MintCardSurface,
+                            selectedBorderColor = MintDarkGreen,
+                            borderWidth = 1.dp
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            if (selectedType == "Custom") {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = customMedicText,
+                    onValueChange = { customMedicText = it },
+                    placeholder = { Text("Type custom routine...", color = MintDarkGreen.copy(alpha = 0.3f),
+                        fontWeight = FontWeight.SemiBold) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MintDarkGreen,
+                        unfocusedBorderColor = MintCardSurface,
+                        focusedContainerColor = MintCardSurface,
+                        unfocusedContainerColor = MintCardSurface
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
 
+            Spacer(modifier = Modifier.height(20.dp))
             // 3. Title Field
             OutlinedTextField(
                 value = titleInput,
                 onValueChange = { titleInput = it },
-                placeholder = { Text("Title *", color = MintDarkGreen.copy(alpha = 0.5f)) },
+                placeholder = { Text("Title", color = MintDarkGreen.copy(alpha = 0.5f)) },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MintDarkGreen,
