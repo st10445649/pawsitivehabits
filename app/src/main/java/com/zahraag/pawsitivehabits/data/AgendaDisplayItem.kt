@@ -17,3 +17,9 @@ data class MedicTypeOption(
     val name: String,
     @DrawableRes val iconRes: Int
 )
+
+data class CategoryOption(
+    val name: String,
+    @DrawableRes val iconRes: Int
+)
+

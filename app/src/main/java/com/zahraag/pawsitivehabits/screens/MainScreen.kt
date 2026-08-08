@@ -40,7 +40,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.zahraag.pawsitivehabits.BottomNavItem
 import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
+import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
+import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
@@ -137,12 +140,15 @@ fun MainScreen(rootnavController: NavHostController){
             }
             composable(BottomNavItem.Agenda.route) {
                 AgendaScreen(
-                    routinesList = emptyList(),
-                    calendarEventsList = emptyList(),
-                    petNamesMap = emptyMap(),
-                    onNavigateBack = {navController.popBackStack()},
-                    onNavigateToAddRoutine = {rootnavController.navigate(Screen.AddRoutine.route) },
-                )
+                    routinesList = sampleRoutines,
+                    calendarEventsList = sampleCalendarEvents,
+                    petNamesMap = samplePetNamesMap,
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
+                    onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
+                    onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
+                    onDeleteCalendarEvent = { },
+                    )
             }
             composable(BottomNavItem.Features.route) {
                 FeaturesScreen(onFeatureClick = { route -> rootnavController.navigate(route) })

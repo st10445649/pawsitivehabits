@@ -13,6 +13,7 @@ data class CalendarEvents(
     var title: String,
     var category: String,
     var time: Long?= null,
+    var date: Long?=null,
     var notes: String,
     var reminderMinutes: Int = 30,
     @Transient

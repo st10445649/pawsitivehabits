@@ -63,4 +63,51 @@ object SampleData {
             reminderMinutes = 30
         )
     )
+
+    // SampleData.kt
+
+    val samplePetNamesMap = mapOf(
+        "pet1" to "Nala",
+        "pet2" to "Milo"
+    )
+
+    val sampleRoutines = listOf(
+        Routine(
+            userId = "user123",
+            petId = "pet1",
+            title = "Bath",
+            frequency = "Weekly",
+            startDate = System.currentTimeMillis(),
+            repeatDays = "Wed,Sat",
+            time = System.currentTimeMillis()
+        ),
+        Routine(
+            userId = "user123",
+            petId = "pet2",
+            title = "Teeth Cleaning",
+            frequency = "Daily",
+            startDate = System.currentTimeMillis(),
+            repeatDays = "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+            time = System.currentTimeMillis() + 3600000
+        )
+    )
+
+    val sampleCalendarEvents = listOf(
+        CalendarEvents(
+            userId = "user123",
+            petId = "pet1",
+            title = "Rabies Vaccination",
+            category = "Medical",
+            time = System.currentTimeMillis(),
+            notes = "Annual booster shot at Vet Clinic."
+        ),
+        CalendarEvents(
+            userId = "user123",
+            petId = "pet2",
+            title = "Grooming Appointment",
+            category = "Grooming",
+            time = System.currentTimeMillis() + 86400000,
+            notes = "Full coat trim and nail grinding."
+        )
+    )
 }

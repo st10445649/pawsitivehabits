@@ -4,12 +4,15 @@ import android.R.attr.fontWeight
 import android.R.attr.onClick
 import android.R.attr.text
 import android.R.attr.type
+import android.os.Build
 import android.text.format.DateUtils.isToday
 import android.view.RoundedCorner
 import android.widget.Space
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,11 +43,15 @@ import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePickerDefaults.dateFormatter
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -53,6 +60,7 @@ import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SegmentedButtonDefaults.Icon
@@ -60,6 +68,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -103,18 +112,27 @@ import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 import com.zahraag.pawsitivehabits.R
+import com.zahraag.pawsitivehabits.data.CategoryOption
 import com.zahraag.pawsitivehabits.data.RoutineTypeOption
+import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
+import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
 import java.util.Locale.getDefault
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendaScreen(
     routinesList: List<Routine> = emptyList(),
     calendarEventsList: List<CalendarEvents> = emptyList(),
     petNamesMap: Map<String, String> = emptyMap(),
     onNavigateBack: () -> Unit,
-    onNavigateToAddRoutine: () -> Unit
+    onNavigateToAddRoutine: () -> Unit,
+    onNavigateToAddCalendarEvent: () -> Unit,
+    onNavigateToEditCalendarEvent: (String) -> Unit = {},
+    onDeleteCalendarEvent: (CalendarEvents) -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState()
 
     Box(
         modifier = Modifier
@@ -173,14 +191,16 @@ fun AgendaScreen(
                 CalendarView(
                     routines = routinesList,
                     events = calendarEventsList,
-                    petNamesMap = petNamesMap
+                    petNamesMap = petNamesMap,
+                    onEditEvent = onNavigateToEditCalendarEvent,
+                    onDeleteEvent = onDeleteCalendarEvent
                 )
             }else {
                 RoutinesListView(routines = routinesList,petNamesMap = petNamesMap)
             }
         }
         FloatingActionButton(
-            onClick = onNavigateToAddRoutine,
+            onClick = { showBottomSheet = true },
             containerColor = MintDarkGreen,
             contentColor = SurfaceWhite,
             shape = CircleShape,
@@ -191,6 +211,119 @@ fun AgendaScreen(
         ) {
             Icon(Icons.Default.Add, contentDescription = "Add Routine", modifier = Modifier.size(32.dp))
         }
+
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                onDismissRequest = { showBottomSheet = false },
+                sheetState = sheetState,
+                containerColor = SurfaceWhite,
+                dragHandle = { BottomSheetDefaults.DragHandle(color = MintDarkGreen.copy(alpha = 0.4f)) }
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 16.dp)
+                ) {
+                    Text(
+                        text = "Create New",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MintDarkGreen,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+
+                    // Add Routine Option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MintCardSurface)
+                            .clickable {
+                                showBottomSheet = false
+                                onNavigateToAddRoutine()
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(MintDarkGreen),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.customroutine),
+                                contentDescription = null,
+                                tint = SurfaceWhite,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Add Routine",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                            Text(
+                                text = "Set recurring tasks like bath or grooming",
+                                fontSize = 12.sp,
+                                color = TextMuted
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Add Calendar Event Option
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MintCardSurface)
+                            .clickable {
+                                showBottomSheet = false
+                                onNavigateToAddCalendarEvent()
+                            }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(Color(0xFFFC8369)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.calendarnav),
+                                contentDescription = null,
+                                tint = SurfaceWhite,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column {
+                            Text(
+                                text = "Add Calendar Event",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = TextDark
+                            )
+                            Text(
+                                text = "Schedule one-time vet visits or playdates",
+                                fontSize = 12.sp,
+                                color = TextMuted
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
+            }
+        }
     }
 }
 
@@ -198,7 +331,9 @@ fun AgendaScreen(
 fun CalendarView(
     routines: List<Routine>,
     events: List<CalendarEvents>,
-    petNamesMap: Map<String, String>
+    petNamesMap: Map<String, String>,
+    onEditEvent: (String) -> Unit,
+    onDeleteEvent: (CalendarEvents) -> Unit
 ) {
     var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val today = remember { LocalDate.now() }
@@ -324,7 +459,8 @@ fun CalendarView(
                                 petName = petName,
                                 timeStr = item.routine.time.toFormattedTime(),
                                 badgeText = "Routine",
-                                badgeColor = MintDarkGreen
+                                badgeColor = MintDarkGreen,
+                                iconRes = getRoutineIconRes(item.routine.title)
                             )
                         }
                         is AgendaDisplayItem.EventItem -> {
@@ -334,7 +470,10 @@ fun CalendarView(
                                 petName = petName,
                                 timeStr = item.event.time.toFormattedTime(),
                                 badgeText = item.event.category,
-                                badgeColor = Color(0xFFFC8369)
+                                badgeColor = Color(0xFFFC8369),
+                                iconRes = R.drawable.calendarnav,
+                                onEditClick = { onEditEvent(item.event.id) },
+                                onDeleteClick = { onDeleteEvent(item.event) }
                             )
                         }
                     }
@@ -343,7 +482,16 @@ fun CalendarView(
         }
     }
 }
-
+fun getRoutineIconRes(title: String): Int {
+    return when (title.lowercase()) {
+        "bath" -> R.drawable.bathroutine
+        "ear cleaning" -> R.drawable.earroutine
+        "teeth cleaning" -> R.drawable.teethroutine
+        "brushing" -> R.drawable.brushroutine
+        "nail trimming" -> R.drawable.nailtrimroutine
+        else -> R.drawable.customroutine
+    }
+}
 @Composable
 fun DaysOfWeekHeader(firstDayOfWeek: DayOfWeek) {
     val daysOfWeek = remember(firstDayOfWeek) {
@@ -423,8 +571,13 @@ fun AgendaCard(
     petName: String,
     timeStr: String,
     badgeText: String,
-    badgeColor: Color
+    badgeColor: Color,
+    iconRes: Int,
+    onEditClick: (() -> Unit)? = null,
+    onDeleteClick: (() -> Unit)? = null
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
@@ -437,10 +590,18 @@ fun AgendaCard(
         ) {
             Box(
                 modifier = Modifier
-                    .size(width = 6.dp, height = 44.dp)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(badgeColor)
-            )
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MintMediumGreen),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = iconRes),
+                    contentDescription = title,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(36.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.width(14.dp))
 
@@ -462,10 +623,320 @@ fun AgendaCard(
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                 )
             }
+            if (onEditClick != null || onDeleteClick != null) {
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(
+                            Icons.Default.MoreVert,
+                            contentDescription = "Options",
+                            tint = TextDark
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false },
+                        modifier = Modifier.background(SurfaceWhite)
+                    ) {
+                        onEditClick?.let {
+                            DropdownMenuItem(
+                                text = { Text("Edit", color = TextDark) },
+                                onClick = {
+                                    showMenu = false
+                                    it()
+                                }
+                            )
+                        }
+                        onDeleteClick?.let {
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = Color.Red) },
+                                onClick = {
+                                    showMenu = false
+                                    it()
+                                }
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AddEditCalendarEventScreen(
+    petsMap: Map<String, String> = samplePetNamesMap,
+    existingEvent: CalendarEvents? = null,
+    currentUserId: String = "user123",
+    onNavigateBack: () -> Unit,
+    onSaveEvent: (CalendarEvents) -> Unit
+) {
+    var date by remember { mutableStateOf(existingEvent?.date?.toLocalDate() ?: LocalDate.now()) }
+    var title by remember { mutableStateOf(existingEvent?.title ?: "") }
+    var category by remember { mutableStateOf(existingEvent?.category ?: "Medical") }
+    var notes by remember { mutableStateOf(existingEvent?.notes ?: "") }
+    var selectedPetId by remember { mutableStateOf(existingEvent?.petId ?: petsMap.keys.firstOrNull() ?: "") }
+    var isPetDropdownExpanded by remember { mutableStateOf(false) }
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
+    val categories = remember {
+        listOf(
+            CategoryOption("Medical", R.drawable.checkupmed), // adjust drawable names as needed
+            CategoryOption("Grooming", R.drawable.brushroutine),
+            CategoryOption("Vaccination", R.drawable.vaccinemed),
+            CategoryOption("Playdate", R.drawable.greenpaws),
+            CategoryOption("Other", R.drawable.customroutine)
+        )
+    }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MintBackground)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(20.dp)
+        ) {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onNavigateBack) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+                        contentDescription = "Back",
+                        tint = MintDarkGreen,
+                        modifier = Modifier.size(50.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.weight(1f))
+                Text(
+                    text = if (existingEvent == null) "New Event" else "Edit Event",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MintDarkGreen
+                )
+                Spacer(modifier = Modifier.weight(1.3f))
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Pet Selection Dropdown
+            Text("Pet", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(8.dp))
+            Box {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isPetDropdownExpanded = true }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.greenpaws),
+                            contentDescription = null,
+                            tint = Color.Unspecified,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = petsMap[selectedPetId] ?: "Select Pet",
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MintDarkGreen)
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = isPetDropdownExpanded,
+                    onDismissRequest = { isPetDropdownExpanded = false },
+                    modifier = Modifier.background(SurfaceWhite)
+                ) {
+                    petsMap.forEach { (id, name) ->
+                        DropdownMenuItem(
+                            text = { Text(name, color = TextDark) },
+                            onClick = {
+                                selectedPetId = id
+                                isPetDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Event Title Input
+            Text("Event Title", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = title,
+                onValueChange = { title = it },
+                placeholder = {
+                    Text(
+                        "e.g. Vet Checkup",
+                        color = MintDarkGreen.copy(alpha = 0.3f),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MintDarkGreen,
+                    unfocusedBorderColor = MintCardSurface,
+                    focusedContainerColor = MintCardSurface,
+                    unfocusedContainerColor = MintCardSurface
+                ),
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Text("Category", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(10.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                categories.forEach { cat ->
+                    val isSelected = category == cat.name
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { category = cat.name },
+                        label = {
+                            Text(
+                                cat.name,
+                                color = if (isSelected) SurfaceWhite else MintDarkGreen,
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 14.sp
+                            )
+                        },
+                        leadingIcon = {
+                            if (isSelected) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = null,
+                                    tint = SurfaceWhite,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = cat.iconRes),
+                                    tint = Color.Unspecified,
+                                    contentDescription = cat.name,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = MintDarkGreen,
+                            containerColor = MintCardSurface,
+                        ),
+                        border = FilterChipDefaults.filterChipBorder(
+                            enabled = true,
+                            selected = isSelected,
+                            borderColor = MintCardSurface,
+                            selectedBorderColor = MintDarkGreen,
+                            borderWidth = 1.dp
+                        ),
+                        shape = RoundedCornerShape(16.dp)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Date", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Date", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
+                        Text(date.format(dateFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Notes Input Field
+            Text("Notes", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = notes,
+                onValueChange = { notes = it },
+                placeholder = {
+                    Text(
+                        "Add extra details...",
+                        color = MintDarkGreen.copy(alpha = 0.3f),
+                        fontWeight = FontWeight.SemiBold
+                    )
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = MintDarkGreen,
+                    unfocusedBorderColor = MintCardSurface,
+                    focusedContainerColor = MintCardSurface,
+                    unfocusedContainerColor = MintCardSurface
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 3
+            )
+
+            Spacer(modifier = Modifier.height(28.dp))
+
+            // Save Button
+            Button(
+                onClick = {
+                    val eventToSave = existingEvent?.copy(
+                        title = title,
+                        category = category,
+                        notes = notes,
+                        petId = selectedPetId
+                    ) ?: CalendarEvents(
+                        userId = currentUserId,
+                        petId = selectedPetId,
+                        title = title,
+                        category = category,
+                        time = System.currentTimeMillis(),
+                        notes = notes
+                    )
+                    onSaveEvent(eventToSave)
+                    onNavigateBack()
+                },
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp)
+            ) {
+                Text(
+                    text = if (existingEvent == null) "CREATE EVENT" else "SAVE CHANGES",
+                    fontWeight = FontWeight.Bold,
+                    color = SurfaceWhite
+                )
+            }
+        }
+    }
+}
 @Composable
 fun RoutinesListView(
     routines: List<Routine>,
@@ -484,7 +955,8 @@ fun RoutinesListView(
                     petName = petName,
                     timeStr = "${routine.frequency} • ${routine.time.toFormattedTime()}",
                     badgeText = "Routine",
-                    badgeColor = MintDarkGreen
+                    badgeColor = MintDarkGreen,
+                    iconRes = getRoutineIconRes(routine.title)
                 )
             }
         }
@@ -536,6 +1008,8 @@ fun AddRoutineScreen(
 
     var startDate by remember { mutableStateOf(LocalDate.now()) }
     var showInCalendar by remember { mutableStateOf(true) }
+
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     val routineTypes = remember {
         listOf(
@@ -724,7 +1198,29 @@ fun AddRoutineScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Start Date", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Date", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
+                        Text(startDate.format(dateFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+                    }
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Switches & Details Card
             Card(

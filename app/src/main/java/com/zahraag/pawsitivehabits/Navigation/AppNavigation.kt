@@ -8,8 +8,12 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.zahraag.pawsitivehabits.data.Pet
+import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
+import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
+import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.UserSettings
+import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
 import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
@@ -25,6 +29,7 @@ import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
 import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
+import kotlin.String
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -87,17 +92,30 @@ rootnavController = rootnavController
 
         composable(Screen.Agenda.route) {
             AgendaScreen(
-                routinesList = emptyList(),
-                calendarEventsList = emptyList(),
-                petNamesMap = emptyMap(),
+                routinesList = sampleRoutines,
+                calendarEventsList = sampleCalendarEvents,
+                petNamesMap = samplePetNamesMap,
                 onNavigateBack = { rootnavController.popBackStack() },
-                onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) }
+                onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
+                onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
+                onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
+                onDeleteCalendarEvent = { },
             )
+        }
+
+        composable(Screen.AddCalendarEvent.route) {
+            AddEditCalendarEventScreen(
+                petsMap = samplePetNamesMap,
+                existingEvent= null,
+                currentUserId= "user123",
+                onSaveEvent= {},
+                onNavigateBack = { rootnavController.popBackStack() },
+                )
         }
 
         composable(Screen.AddRoutine.route) {
             AddRoutineScreen(
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 currentUserId = "user123",
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveRoutine = {}
@@ -106,7 +124,7 @@ rootnavController = rootnavController
 
         composable(Screen.Weight.route) {
             WeightScreen(
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 weightList = emptyList(),
                 currentUserId = "user123",
                 onNavigateBack = { rootnavController.popBackStack() },
@@ -117,7 +135,7 @@ rootnavController = rootnavController
             ExpenseScreen(
                 onNavigateBack = { rootnavController.popBackStack() },
                 expensesList = emptyList(),
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 onNavigateToAddExpense = { rootnavController.navigate(Screen.AddExpenses.route) },
                 onNavigateToEditExpense = { rootnavController.navigate(Screen.AddExpenses.route) }
             ) { }
@@ -125,7 +143,7 @@ rootnavController = rootnavController
 
         composable(Screen.AddExpenses.route){
             AddExpenseScreen(existingExpense =null,
-                petsMap= emptyMap(),
+                petsMap= samplePetNamesMap,
                 currentUserId ="user123",
                 onNavigateBack= { rootnavController.popBackStack() },
                 onSaveExpense= {},
@@ -136,7 +154,7 @@ rootnavController = rootnavController
         composable(Screen.MedicalRecord.route){
             MedicalRecordsScreen(
                 medicalList = emptyList(),
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 onNavigateBack = { rootnavController.popBackStack() },
                 onNavigateToAddRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
                 onNavigateToEditRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
@@ -145,7 +163,7 @@ rootnavController = rootnavController
 
         composable(Screen.AddMedicalRecord.route){
             AddEditMedicalRecordScreen(
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 onNavigateBack = { rootnavController.popBackStack() },
                 existingRecord = null,
                 currentUserId = "user123",
@@ -156,7 +174,7 @@ rootnavController = rootnavController
         composable(Screen.Memories.route){
             MemoriesScreen(
                 memoriesList = emptyList(),
-                petsMap = emptyMap(),
+                petsMap = samplePetNamesMap,
                 currentUserId= "user123",
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveMemory = { rootnavController.navigate(Screen.Memories.route) }
