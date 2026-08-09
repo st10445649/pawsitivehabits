@@ -4,9 +4,11 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
@@ -27,6 +29,7 @@ import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.MedicalRecordsScreen
 import com.zahraag.pawsitivehabits.screens.MemoriesScreen
+import com.zahraag.pawsitivehabits.screens.PetDetailScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
@@ -84,13 +87,34 @@ rootnavController = rootnavController
         }
 
 
-        composable(Screen.AddPet.route) {
+        composable(Screen.Pets.route) {
             PetScreen(
                 pets= samplePets,
-                selectedPetId= null,
-                onSelectPet={},
+                selectedPetId= samplePets.first().id,
+                onSelectPet={ id -> samplePets.first().id},
+                onViewDetails = { petId ->
+                    rootnavController.navigate("pet_details/$petId")
+                },
                 onAddPetSubmitted={}
            )
+        }
+
+        composable(
+            route = "pet_details/{petId}",
+            arguments = listOf(navArgument("petId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val petId = backStackEntry.arguments?.getString("petId")
+            val selectedPet = samplePets.find { it.id == petId } ?: samplePets.first()
+
+            PetDetailScreen(
+                pet = selectedPet,
+                onBackClick = { rootnavController.popBackStack() },
+                onEditPetClick = { /* Open edit dialog/screen */ },
+                onFeatureClick = { route ->
+                    // Pass petId alongside the feature route so the next screen filters by this pet
+                    rootnavController.navigate("$route/$petId")
+                }
+            )
         }
 
         composable(Screen.Agenda.route) {

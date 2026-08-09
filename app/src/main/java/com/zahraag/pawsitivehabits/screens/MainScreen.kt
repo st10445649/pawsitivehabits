@@ -133,10 +133,13 @@ fun MainScreen(rootnavController: NavHostController){
             }
             composable(BottomNavItem.Pets.route) {
                 PetScreen(
-                    pets = samplePets,
-                    selectedPetId = null,
-                    onSelectPet = { selectedId -> /* Update selected pet */ },
-                    onAddPetSubmitted = { newPet -> /* Save pet */ }
+                    pets= samplePets,
+                    selectedPetId= samplePets.first().id,
+                    onSelectPet={ id -> samplePets.first().id},
+                    onViewDetails = { petId ->
+                        rootnavController.navigate("pet_details/$petId")
+                    },
+                    onAddPetSubmitted={}
                 )
             }
             composable(BottomNavItem.Agenda.route) {

@@ -2,6 +2,7 @@ package com.zahraag.pawsitivehabits.screens
 
 import android.R.attr.fontWeight
 import android.R.attr.text
+import android.widget.Space
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -87,6 +88,8 @@ import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import com.zahraag.pawsitivehabits.ui.theme.TextMuted
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
+import com.zahraag.pawsitivehabits.data.FeatureItem
+import com.zahraag.pawsitivehabits.data.featureItemsList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -94,13 +97,11 @@ fun PetScreen(
     pets: List<Pet>,
     selectedPetId: String?,
     onSelectPet: (String) -> Unit,
-    onAddPetSubmitted:(Pet) -> Unit
+    onAddPetSubmitted:(Pet) -> Unit,
+    onViewDetails: (String) -> Unit,
+    onBackClick: () -> Unit = {}
 ) {
     var showAddPetModal by remember { mutableStateOf(false) }
-    var activeDetailPet by remember { mutableStateOf<Pet?>(null) }
-
-
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -165,24 +166,7 @@ fun PetScreen(
                         )
                     }
                 }
-            } else {
-                if (activeDetailPet != null) {
-
-                    PetDetailScreen(
-                        pet = activeDetailPet!!,
-                        latestWeightKg = 13.2,
-                        onBackClick = { activeDetailPet = null },
-                        onLogWeightClick = { /* Go to weight */ },
-                        onAddExpenseClick = { /* Go to expenses */ },
-                        onMedicalRecordClick = { /* Go to medical */ }
-                    )
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MintBackground)
-                            .padding(16.dp)
-                    ) {
+            }else{
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(1),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -191,10 +175,12 @@ fun PetScreen(
                                 DetailedPetProfileCard(
                                     pet = pet,
                                     isSelected = pet.id == selectedPetId,
-                                    onClick = { onSelectPet(pet.id) },
+                                    onClick = {
+                                        onSelectPet(pet.id)
+                                        onViewDetails(pet.id) },
                                     latestWeightKg = 13.2,
                                     upcomingTaskCount = 2,
-                                    onViewDetails = { activeDetailPet = pet },
+                                    onViewDetails = { onViewDetails(pet.id)},
                                     onEditClick = { },
                                     onDeleteClick = {}
                                 )
@@ -202,7 +188,6 @@ fun PetScreen(
                         }
                     }
                 }
-            }}
 
         FloatingActionButton(
             onClick = { showAddPetModal = true },
@@ -872,16 +857,15 @@ fun PetDetailScreen(
     ),
     recentExpenseTotal: Double = 130.99,
     onBackClick: () -> Unit,
-    onLogWeightClick: () -> Unit,
-    onAddExpenseClick: () -> Unit,
-    onMedicalRecordClick: () -> Unit
+    onEditPetClick: () -> Unit,
+    onFeatureClick: (route: String) -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = pet.name,
+                        text = "${pet.name} 's Profile",
                         fontWeight = FontWeight.Bold,
                         color = MintDarkGreen,
                         fontSize = 22.sp
@@ -892,6 +876,16 @@ fun PetDetailScreen(
                         Icon(
                             Icons.Default.ArrowBack,
                             contentDescription = "Back",
+                            tint = MintDarkGreen,
+                            modifier = Modifier.size(50.dp)
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onEditPetClick) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Pet",
                             tint = MintDarkGreen
                         )
                     }
@@ -907,226 +901,311 @@ fun PetDetailScreen(
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
+
+            ) {
+            Spacer(modifier = Modifier.height(12.dp))
             // Profile Header
             Card(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(72.dp)
-                            .clip(CircleShape)
-                            .background(MintCardSurface),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.petnav),
-                            contentDescription = null,
-                            tint = MintDarkGreen,
-                            modifier = Modifier.size(40.dp)
-                        )
-                    }
-
-                    Column {
-                        Text(
-                            text = pet.name,
-                            style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                            color = TextDark
-                        )
-                        Text(
-                            text = "${pet.petType} • ${pet.breed ?: "Unknown Breed"}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextMuted
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                            Surface(
-                                color = MintCardSurface,
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Text(
-                                    text = if (pet.isNeutered) "Neutered" else "Intact",
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MintDarkGreen,
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Quick Stats Grid
-            Text(
-                text = "Overview & Stats",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextDark
-            )
-
-            Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Weight Card
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onLogWeightClick() }
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Current Weight", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = if (latestWeightKg != null) "$latestWeightKg kg" else "N/A",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MintDarkGreen
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap to view history →",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MintPrimary
-                        )
-                    }
-                }
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
 
-                // Recent Expenses Card
-                Card(
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable { onAddExpenseClick() }
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text("Recent Spending", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = "R${"%.2f".format(recentExpenseTotal)}",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            color = MintDarkGreen
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = "Tap to view expenses →",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MintPrimary
-                        )
-                    }
-                }
-            }
-
-            // Upcoming Appointments / Tasks Section
-            Card(
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Text(
-                            text = "Upcoming Care & Visits",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                            color = TextDark
-                        )
-                        IconButton(onClick = onMedicalRecordClick, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Add, contentDescription = "Add", tint = MintDarkGreen)
+                        Box(
+                            modifier = Modifier
+                                .size(72.dp)
+                                .clip(CircleShape)
+                                .background(MintCardSurface),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.petnav),
+                                contentDescription = null,
+                                tint = MintDarkGreen,
+                                modifier = Modifier.size(40.dp)
+                            )
                         }
-                    }
 
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    if (upcomingAppointments.isEmpty()) {
-                        Text(
-                            text = "No upcoming visits scheduled.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextMuted
-                        )
-                    } else {
-                        upcomingAppointments.forEach { (title, date) ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.DateRange,
-                                        contentDescription = null,
-                                        tint = MintDarkGreen,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Text(
-                                        text = title,
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = TextDark
-                                    )
-                                }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = pet.name,
+                                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                                color = TextDark
+                            )
+                            Text(
+                                text = "${pet.petType} • ${pet.breed ?: "Unknown Breed"}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextMuted
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 Surface(
-                                    color = MintBackground,
+                                    color = MintCardSurface,
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
                                     Text(
-                                        text = date,
-                                        style = MaterialTheme.typography.labelSmall,
+                                        text = if (pet.isNeutered) "Spayed/Neutered" else "Intact",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold,
                                         color = MintDarkGreen,
-                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        modifier = Modifier.padding(
+                                            horizontal = 8.dp,
+                                            vertical = 2.dp
+                                        )
                                     )
                                 }
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                MintBackground.copy(alpha = 0.5f),
+                                RoundedCornerShape(16.dp)
+                            )
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DetailInfoRow(
+                            label = "Microchip ID",
+                            value = pet.microchipId ?: "Not micro-chipped"
+                        )
+                        DetailInfoRow(label = "User ID", value = pet.userId)
+                    }
                 }
             }
+                Spacer(modifier = Modifier.height(20.dp))
 
-            // Quick Actions Button Row
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                Button(
-                    onClick = onLogWeightClick,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),
-                    modifier = Modifier.weight(1f)
+                // Quick Stats Grid
+                Text(
+                    text = "Quick Stats",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MintDarkGreen,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text("+ Log Weight", fontSize = 13.sp)
+                    // Weight Card
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Current Weight",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (latestWeightKg != null) "$latestWeightKg kg" else "N/A",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = MintDarkGreen
+                            )
+                        }
+                    }
+
+                    // Recent Expenses Card
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                        modifier = Modifier
+                            .weight(1f)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text(
+                                "Recent Spending",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = TextMuted
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "R${"%.2f".format(recentExpenseTotal)}",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = MintDarkGreen
+                            )
+                        }
+                    }
                 }
-                Button(
-                    onClick = onMedicalRecordClick,
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MintPrimary),
-                    modifier = Modifier.weight(1f)
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+                // Upcoming Appointments / Tasks Section
+                Card(
+                    shape = RoundedCornerShape(20.dp),
+                    colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("+ Medical", fontSize = 13.sp, color = SurfaceWhite)
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Upcoming Care & Visits",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = MintDarkGreen,
+                                modifier = Modifier.padding(bottom = 12.dp)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        if (upcomingAppointments.isEmpty()) {
+                            Text(
+                                text = "No upcoming visits scheduled.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextMuted
+                            )
+                        } else {
+                            upcomingAppointments.forEach { (title, date) ->
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 6.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.DateRange,
+                                            contentDescription = null,
+                                            tint = MintDarkGreen,
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                        Text(
+                                            text = title,
+                                            style = MaterialTheme.typography.bodyMedium.copy(
+                                                fontWeight = FontWeight.SemiBold
+                                            ),
+                                            color = TextDark
+                                        )
+                                    }
+                                    Surface(
+                                        color = MintBackground,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = date,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MintDarkGreen,
+                                            modifier = Modifier.padding(
+                                                horizontal = 8.dp,
+                                                vertical = 4.dp
+                                            )
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+            Spacer(modifier = Modifier.height(20.dp))
+                Text(
+                    text = "Pet Features",
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    color = MintDarkGreen,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(240.dp)
+                ) {
+                    items(featureItemsList) { shortcut ->
+                        FeatureShortcutCard(
+                            shortcut = shortcut,
+                            onClick = { onFeatureClick(shortcut.route) }
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
         }
+    }
+
+@Composable
+fun DetailInfoRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodySmall, color = TextMuted)
+        Text(text = value, style = MaterialTheme.typography.bodySmall, fontWeight = FontWeight.Bold, color = TextDark)
     }
 }
 
+@Composable
+fun FeatureShortcutCard(
+    shortcut: FeatureItem,
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .clip(CircleShape)
+                    .background(shortcut.backgroundColor),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    painter = painterResource(id = shortcut.iconRes ?: R.drawable.petnav),
+                    contentDescription = null,
+                    tint = Color.Unspecified,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Text(
+                text = shortcut.title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = TextDark
+            )
+            Text(
+                text = shortcut.subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = TextMuted
+            )
+        }
+    }
+}
 @Composable
 fun PetColorPickerSection() {
     val controller = rememberColorPickerController()
