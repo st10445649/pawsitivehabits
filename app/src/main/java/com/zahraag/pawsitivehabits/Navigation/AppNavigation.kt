@@ -25,6 +25,7 @@ import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
 import com.zahraag.pawsitivehabits.screens.AgendaScreen
 import com.zahraag.pawsitivehabits.screens.EmergencyContactsScreen
 import com.zahraag.pawsitivehabits.screens.ExpenseScreen
+import com.zahraag.pawsitivehabits.screens.HomeScreen
 import com.zahraag.pawsitivehabits.screens.LoginScreen
 import com.zahraag.pawsitivehabits.screens.MainScreen
 import com.zahraag.pawsitivehabits.screens.MedicalRecordsScreen
@@ -83,6 +84,19 @@ fun AppNavigation() {
         composable("main") {
             MainScreen(
 rootnavController = rootnavController
+            )
+        }
+
+        composable(Screen.Home.route) {
+            HomeScreen(
+                pets= samplePets,
+                selectedPetId= samplePets.first().id,
+                onSelectPet={ id -> samplePets.first().id},
+                onNavigateToPetDetails = { petId ->
+                    rootnavController.navigate("pet_details/$petId")
+                },
+                onNavigateToFeature = {
+                }
             )
         }
 

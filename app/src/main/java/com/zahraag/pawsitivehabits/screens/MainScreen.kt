@@ -125,12 +125,19 @@ fun MainScreen(rootnavController: NavHostController){
             startDestination = BottomNavItem.Home.route,
             modifier = Modifier.padding(paddingValues)
         ) {
-            composable(BottomNavItem.Home.route) {
-//                HomeScreen(
-//                    onNavigateToPetDetails = { petId -> navController.navigate("pet_detail/$petId") },
-//                    onNavigateToFeatures = { navController.navigate(BottomNavItem.Features.route) }
-//                )
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    pets= samplePets,
+                    selectedPetId= samplePets.first().id,
+                    onSelectPet={ id -> samplePets.first().id},
+                    onNavigateToPetDetails = { petId ->
+                        rootnavController.navigate("pet_details/$petId")
+                    },
+                    onNavigateToFeature = {
+                    }
+                )
             }
+
             composable(BottomNavItem.Pets.route) {
                 PetScreen(
                     pets= samplePets,
