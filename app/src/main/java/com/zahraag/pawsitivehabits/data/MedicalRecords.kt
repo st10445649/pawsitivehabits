@@ -14,6 +14,10 @@ data class MedicalRecords(
     var title: String,
     var date: Long,
     var vet: String,
+    val reason: String = "",
+    val nextDueDate: Long? = null,
+    val clinic: String = "",
+    val notes: String = "",
 
     @Transient
     var isSynced: Boolean = false

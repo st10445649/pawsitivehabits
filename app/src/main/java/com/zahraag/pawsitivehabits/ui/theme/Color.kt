@@ -2,10 +2,19 @@ package com.zahraag.pawsitivehabits.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val MintBackground = Color(0xFFE8F8F2)
+val MintCardSurface = Color(0xFFC3F3DF)
+val MintPrimary = Color(0xFF68C3A3)
+val MintDarkGreen = Color(0xFF336C5B)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val MintMediumGreen = Color(0xFF67BA95)
+
+// Accent Colors for Cards & Tags
+val PetCardPurple = Color(0xFFD6B0FF)
+val PetCardOrange = Color(0xFFFFB980)
+val FeatureBlue = Color(0xFF64C2FF)
+val FeaturePink = Color(0xFFFF9BB2)
+
+val TextDark = Color(0xFF1E2D28)
+val TextMuted = Color(0xFF5D736C)
+val SurfaceWhite = Color(0xFFFFFFFF)
