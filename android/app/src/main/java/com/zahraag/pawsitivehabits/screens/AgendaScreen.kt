@@ -185,7 +185,7 @@ fun AgendaScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(25.dp))
 
             if(selectedTab == 0) {
                 CalendarView(
