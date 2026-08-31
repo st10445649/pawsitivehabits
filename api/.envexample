@@ -1,0 +1,4 @@
+PORT:3000
+APP_NAME:PawsitiveHabits
+MONGODB_URI=mongodb+srv://<db_username>:<db_password>@pawsitivehabits.aqhbbep.mongodb.net/
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
