@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.data.remote
 
 import com.google.firebase.auth.FirebaseAuth
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
