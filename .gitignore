@@ -17,3 +17,4 @@ local.properties
 
 api/node_modules/
 .env
+api/serviceAccountKey.json
