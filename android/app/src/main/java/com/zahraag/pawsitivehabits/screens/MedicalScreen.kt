@@ -56,8 +56,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
-import com.zahraag.pawsitivehabits.data.MedicTypeOption
-import com.zahraag.pawsitivehabits.data.MedicalRecords
+import com.zahraag.pawsitivehabits.data.models.MedicTypeOption
+import com.zahraag.pawsitivehabits.data.models.MedicalRecords
 import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
@@ -68,6 +68,7 @@ import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import kotlin.collections.filter
 
 @Composable
@@ -737,7 +738,7 @@ fun AddEditMedicalRecordScreen(
             Button(
                 onClick = {
                     val newRecord = MedicalRecords(
-                        id = existingRecord?.id ?: java.util.UUID.randomUUID().toString(),
+                        id = existingRecord?.id ?: UUID.randomUUID().toString(),
                         userId = currentUserId,
                         petId = selectedPetId,
                         category = selectedType,

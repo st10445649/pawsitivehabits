@@ -51,7 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.zahraag.pawsitivehabits.R
-import com.zahraag.pawsitivehabits.data.Memories
+import com.zahraag.pawsitivehabits.data.models.Memories
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
@@ -60,6 +60,7 @@ import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
 import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 import kotlin.collections.filter
 
 @Composable
@@ -473,7 +474,7 @@ fun AddMemoryDialog(
                             if (titleInput.isNotEmpty() && imageUriString.isNotEmpty()) {
                                 onSaveMemory(
                                     Memories(
-                                        id = java.util.UUID.randomUUID().toString(),
+                                        id = UUID.randomUUID().toString(),
                                         userId = currentUserId,
                                         petId = selectedPetId,
                                         title = titleInput,

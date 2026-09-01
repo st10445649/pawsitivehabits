@@ -60,7 +60,7 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.common.fill
-import com.zahraag.pawsitivehabits.data.Weight
+import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground

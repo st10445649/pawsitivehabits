@@ -29,12 +29,13 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.zahraag.pawsitivehabits.data.Expenses
+import com.zahraag.pawsitivehabits.data.models.Expenses
 import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.ui.theme.*
 import com.zahraag.pawsitivehabits.toLocalDate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.util.UUID
 
 
 val CategoryColors = mapOf(
@@ -598,7 +599,7 @@ fun AddExpenseScreen(
                 onClick = {
                     val category = if (selectedCategory == "Custom") customCategoryText else selectedCategory
                     val updatedExpense = Expenses(
-                        id = existingExpense?.id ?: java.util.UUID.randomUUID().toString(),
+                        id = existingExpense?.id ?: UUID.randomUUID().toString(),
                         userId = currentUserId,
                         petId = selectedPetId,
                         title = titleInput,

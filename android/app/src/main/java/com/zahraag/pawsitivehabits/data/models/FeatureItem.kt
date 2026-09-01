@@ -1,4 +1,4 @@
-package com.zahraag.pawsitivehabits.data
+package com.zahraag.pawsitivehabits.data.models
 
 import androidx.compose.ui.graphics.Color
 import com.zahraag.pawsitivehabits.R

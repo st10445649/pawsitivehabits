@@ -1,12 +1,11 @@
-package com.zahraag.pawsitivehabits.data
+package com.zahraag.pawsitivehabits.data.models
 
-import androidx.room.Entity
 import androidx.room.PrimaryKey
-import kotlinx.serialization.Serializable
+import java.util.UUID
 
 data class EmergencyContact(
     @PrimaryKey
-    val id: String = java.util.UUID.randomUUID().toString(),
+    val id: String = UUID.randomUUID().toString(),
     val name: String,
     val role: String, // e.g., "24/7 Vet Clinic", "Poison Control", "Pet Sitter"
     val phoneNumber: String,

@@ -1,14 +1,13 @@
 package com.zahraag.pawsitivehabits.data
 
-import android.health.connect.datatypes.WeightRecord
 import android.os.Build
 import androidx.annotation.RequiresApi
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.LocalTime
-import java.time.ZoneId
-import java.time.ZonedDateTime
-import java.util.Collections.frequency
+import com.zahraag.pawsitivehabits.data.models.CalendarEvents
+import com.zahraag.pawsitivehabits.data.models.Expenses
+import com.zahraag.pawsitivehabits.data.models.MedicalRecords
+import com.zahraag.pawsitivehabits.data.models.Pet
+import com.zahraag.pawsitivehabits.data.models.Routine
+import com.zahraag.pawsitivehabits.data.models.Weight
 import java.util.concurrent.TimeUnit
 
 object SampleData {
@@ -43,7 +42,7 @@ object SampleData {
     val sampleTasks = listOf(
         Routine(
             id = "101",
-            userId= "user_1",
+            userId = "user_1",
             petId = "1",
             title = "Morning Teeth Brushing",
             time = TimeUnit.HOURS.toMillis(8),
@@ -54,7 +53,7 @@ object SampleData {
         ),
         Routine(
             id = "102",
-            userId= "user_1",
+            userId = "user_1",
             petId = "1",
             title = "Evening Walk & Fetch",
             time = TimeUnit.HOURS.toMillis(17),
@@ -163,7 +162,7 @@ object SampleData {
         Weight(
             userId = "user123",
             petId = "pet1",
-            weightValue =  12.8,
+            weightValue = 12.8,
             date = System.currentTimeMillis() - 86400000L * 60,
             unit = "kg"
 
@@ -171,14 +170,14 @@ object SampleData {
         Weight(
             userId = "user123",
             petId = "pet1",
-            weightValue =  13.1,
+            weightValue = 13.1,
             date = System.currentTimeMillis() - 86400000L * 30,
             unit = "kg"
         ),
         Weight(
             userId = "user123",
             petId = "pet1",
-            weightValue =  12.8,
+            weightValue = 12.8,
             date = System.currentTimeMillis(),
             unit = "kg"
         ),
@@ -194,7 +193,7 @@ object SampleData {
         Weight(
             userId = "user123",
             petId = "pet2",
-            weightValue =  8.4,
+            weightValue = 8.4,
             date = System.currentTimeMillis() - 86400000L * 60,
             unit = "kg"
 
@@ -202,7 +201,7 @@ object SampleData {
         Weight(
             userId = "user123",
             petId = "pet2",
-            weightValue =  8.7,
+            weightValue = 8.7,
             date = System.currentTimeMillis() - 86400000L * 30,
             unit = "kg"
         ),
@@ -217,7 +216,7 @@ object SampleData {
             date = System.currentTimeMillis() - 86400000L * 180, // 6 months ago
             nextDueDate = System.currentTimeMillis() + 86400000L * 185, // Due in ~6 months
             clinic = "Oakwood Veterinary Care",
-            vet= "Dr Jones",
+            vet = "Dr Jones",
             notes = "Core 3-year core vaccine administered."
         ),
         MedicalRecords(
@@ -228,7 +227,7 @@ object SampleData {
             date = System.currentTimeMillis() - 86400000L * 30,
             nextDueDate = System.currentTimeMillis() + 86400000L * 60,
             clinic = "Oakwood Veterinary Care",
-            vet= "Dr Jones",
+            vet = "Dr Jones",
             notes = "Oral tablet given with meal."
         ),
         MedicalRecords(
@@ -238,7 +237,7 @@ object SampleData {
             category = "Vaccination",
             date = System.currentTimeMillis() - 86400000L * 90,
             nextDueDate = System.currentTimeMillis() + 86400000L * 275,
-            vet= "Dr Jones",
+            vet = "Dr Jones",
             clinic = "City Pet Hospital",
             notes = "No adverse reaction noticed."
         ),
@@ -249,7 +248,7 @@ object SampleData {
             category = "Allergies",
             date = System.currentTimeMillis() - 86400000L * 120,
             nextDueDate = null,
-            vet= "Dr Jones",
+            vet = "Dr Jones",
             clinic = "City Pet Hospital",
             notes = "Mild skin rash when fed chicken kibble. Switch to fish/lamb diet."
         )

@@ -1,8 +1,5 @@
 package com.zahraag.pawsitivehabits.screens
 
-import android.R.attr.fontWeight
-import android.R.attr.text
-import android.widget.Space
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -39,8 +36,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,8 +44,6 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -78,7 +71,7 @@ import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.zahraag.pawsitivehabits.LabelText
 import com.zahraag.pawsitivehabits.MintInputField
 import com.zahraag.pawsitivehabits.R
-import com.zahraag.pawsitivehabits.data.Pet
+import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
@@ -86,10 +79,9 @@ import com.zahraag.pawsitivehabits.ui.theme.MintPrimary
 import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import com.zahraag.pawsitivehabits.ui.theme.TextMuted
-import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
-import com.zahraag.pawsitivehabits.data.FeatureItem
-import com.zahraag.pawsitivehabits.data.featureItemsList
+import com.zahraag.pawsitivehabits.data.models.FeatureItem
+import com.zahraag.pawsitivehabits.data.models.featureItemsList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

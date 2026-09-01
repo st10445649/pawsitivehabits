@@ -25,7 +25,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
-import com.zahraag.pawsitivehabits.data.Pet
+import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.ui.theme.*
 
 data class RoutineItem(

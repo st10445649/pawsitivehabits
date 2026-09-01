@@ -3,13 +3,11 @@ package com.zahraag.pawsitivehabits.Navigation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.zahraag.pawsitivehabits.data.Pet
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
@@ -17,7 +15,7 @@ import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
-import com.zahraag.pawsitivehabits.data.UserSettings
+import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
@@ -36,7 +34,6 @@ import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
 import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
-import kotlin.String
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable

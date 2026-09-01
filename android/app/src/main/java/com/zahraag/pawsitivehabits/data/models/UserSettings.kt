@@ -1,4 +1,4 @@
-package com.zahraag.pawsitivehabits.data
+package com.zahraag.pawsitivehabits.data.models
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
