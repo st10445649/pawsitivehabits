@@ -14,6 +14,16 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       trim: true
     },
+    firstName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    lastName: {
+      type: String,
+      trim: true,
+      default: ''
+    },
     displayName: {
       type: String,
       trim: true,
@@ -22,6 +32,11 @@ const userSchema = new mongoose.Schema(
     photoURL: {
       type: String,
       default: ''
+    },
+    authProvider: {
+      type: String,
+      enum: ['password', 'google.com'],
+      default: 'password'
     }
   },
   {
