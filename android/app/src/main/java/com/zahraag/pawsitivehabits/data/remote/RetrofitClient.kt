@@ -4,11 +4,12 @@ import android.content.Context
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import okhttp3.logging.HttpLoggingInterceptor
 import kotlin.jvm.java
 
 object RetrofitClient {
     // 10.0.2.2 points to host development computer from Android Emulator
-    private const val BASE_URL = "http://10.0.2.2:3000/api/"
+    private const val BASE_URL = "http://10.0.2.2:3000/"
     private var retrofit: Retrofit? = null
 
 
@@ -17,8 +18,13 @@ object RetrofitClient {
             val tokenManager = TokenManager(context.applicationContext)
             val authInterceptor = AuthInterceptor(tokenManager)
 
+            val loggingInterceptor = HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            }
+
             val okHttpClient = OkHttpClient.Builder()
                 .addInterceptor(authInterceptor)
+                .addInterceptor(loggingInterceptor)
                 .build()
 
             retrofit = Retrofit.Builder()

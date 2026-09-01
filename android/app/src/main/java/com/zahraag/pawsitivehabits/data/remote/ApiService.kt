@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits.data.remote
 
+import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -19,8 +20,10 @@ interface ApiService {
         @Body request: LoginRequest
     ): Response<AuthResponse>
 
-    @POST("users/sync")
-    suspend fun syncGoogleUser(): Response<AuthResponse>
+    @POST("auth/google")
+    suspend fun syncGoogleUser(
+        @Body request: GoogleAuthRequest
+    ): Response<AuthResponse>
 
     // pet operations
     @GET("pets")
@@ -39,19 +42,21 @@ interface ApiService {
     ): Response<Unit>
 }
 
-
+data class GoogleAuthRequest(
+    val idToken: String
+)
 data class UserDataWrapper(
     val user: UserDto
 )
 
 data class UserDto(
-    val id: String,
-    val firebaseUid: String,
+    @SerializedName("_id") val id: String,
+    @SerializedName("googleId") val firebaseUid: String? = null,
     val email: String,
     val firstName: String? = null,
     val lastName: String? = null,
     val displayName: String,
-    val photoURL: String? = null,
+    @SerializedName("picture") val photoURL: String? = null,
     val authProvider: String
 )
 

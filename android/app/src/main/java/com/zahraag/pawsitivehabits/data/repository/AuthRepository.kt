@@ -3,6 +3,7 @@ package com.zahraag.pawsitivehabits.data.repository
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.models.User
+import com.zahraag.pawsitivehabits.data.remote.GoogleAuthRequest
 import com.zahraag.pawsitivehabits.data.remote.LoginRequest
 import com.zahraag.pawsitivehabits.data.remote.RegisterRequest
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
@@ -88,11 +89,20 @@ object AuthRepository {
             val authResult = auth.signInWithCredential(credential).await()
             val firebaseUser = authResult.user ?: throw Exception("Firebase Auth failed")
 
+            val firebaseIdToken = firebaseUser.getIdToken(true).await()?.token
+                ?: throw Exception("Failed to retrieve Firebase ID Token")
+
             // Sync with Node.js backend
             val apiService = RetrofitClient.getApiService(context)
-            val response = apiService.syncGoogleUser()
+            val response = apiService.syncGoogleUser(GoogleAuthRequest(idToken = firebaseIdToken))
+
             if (response.isSuccessful && response.body() != null) {
-                val userDto = response.body()!!.data?.user ?: throw Exception("User payload missing")
+                val authResponse = response.body()!!
+                val userDto = authResponse.data?.user ?: throw Exception("User payload missing")
+
+                authResponse.token?.let { token ->
+                    TokenManager(context).saveCustomJwtToken(token)
+                }
                 val user = User(
                     firebaseUid = firebaseUser.uid,
                     email = firebaseUser.email ?: "",
