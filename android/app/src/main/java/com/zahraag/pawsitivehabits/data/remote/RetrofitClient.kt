@@ -8,9 +8,10 @@ import kotlin.jvm.java
 object RetrofitClient {
     // 10.0.2.2 points to host development computer from Android Emulator
     private const val BASE_URL = "http://10.0.2.2:3000/api/"
+    val tokenManager = TokenManager()
 
     private val okHttpClient = OkHttpClient.Builder()
-        .addInterceptor(AuthInterceptor())
+        .addInterceptor(AuthInterceptor(tokenManager))
         .build()
 
     val apiService: ApiService by lazy {

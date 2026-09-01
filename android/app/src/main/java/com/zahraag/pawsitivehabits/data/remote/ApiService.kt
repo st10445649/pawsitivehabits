@@ -9,14 +9,18 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface ApiService {
-    @POST("users/sync")
-    suspend fun syncUser(
-        @Body request: SyncUserRequest? = null
-    ): Response<SyncUserResponse>
+    @POST("auth/register")
+    suspend fun register(
+        @Body request: RegisterRequest
+    ): Response<AuthResponse>
 
-    // fetch User Profile
-    @GET("users/profile")
-    suspend fun getCurrentUser(): Response<SyncUserResponse>
+    @POST("auth/login")
+    suspend fun login(
+        @Body request: LoginRequest
+    ): Response<AuthResponse>
+
+    @POST("users/sync")
+    suspend fun syncGoogleUser(): Response<AuthResponse>
 
     // pet operations
     @GET("pets")
@@ -35,16 +39,6 @@ interface ApiService {
     ): Response<Unit>
 }
 
-// Data Transfer Objects (DTOs)
-data class SyncUserRequest(
-    val firstName: String? = null,
-    val lastName: String? = null
-)
-
-data class SyncUserResponse(
-    val status: String,
-    val data: UserDataWrapper
-)
 
 data class UserDataWrapper(
     val user: UserDto
@@ -54,8 +48,11 @@ data class UserDto(
     val id: String,
     val firebaseUid: String,
     val email: String,
+    val firstName: String? = null,
+    val lastName: String? = null,
     val displayName: String,
-    val photoURL: String? = null
+    val photoURL: String? = null,
+    val authProvider: String
 )
 
 data class PetDto(
@@ -67,3 +64,21 @@ data class PetDto(
     val microchipId: String? = null
 )
 
+data class RegisterRequest(
+    val email: String,
+    val password: String,
+    val firstName: String,
+    val lastName: String
+)
+
+data class LoginRequest(
+    val email: String,
+    val password: String
+)
+
+data class AuthResponse(
+    val status: String,
+    val token: String? = null,
+    val data: UserDataWrapper? = null,
+    val message: String? = null
+)

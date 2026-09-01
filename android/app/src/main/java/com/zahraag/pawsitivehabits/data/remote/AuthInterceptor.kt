@@ -6,17 +6,21 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 
-class AuthInterceptor : Interceptor {
+class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
+
+        var token = tokenManager.getCustomJwtToken()
         val user = FirebaseAuth.getInstance().currentUser
 
-        // Obtain token synchronously for OkHttp execution context
-        val token = user?.let {
-            try {
-                runBlocking { it.getIdToken(false).await().token }
-            } catch (e: Exception) {
-                null
+        if (token.isNullOrEmpty()) {
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            token = user?.let {
+                try {
+                    runBlocking { it.getIdToken(false).await().token }
+                } catch (e: Exception) {
+                    null
+                }
             }
         }
 
@@ -28,5 +32,19 @@ class AuthInterceptor : Interceptor {
         }
 
         return chain.proceed(requestBuilder.build())
+    }
+}
+
+class TokenManager {
+    private var customJwt: String? = null
+
+    fun saveCustomJwtToken(token: String) {
+        customJwt = token
+    }
+
+    fun getCustomJwtToken(): String? = customJwt
+
+    fun clear() {
+        customJwt = null
     }
 }
