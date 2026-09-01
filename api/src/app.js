@@ -4,6 +4,8 @@ const app = express();
 
 app.use(express.json());
 
+const authRoutes = require("./routes/authRoutes");
+
 app.get('/api/test', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -19,5 +21,7 @@ app.use((req, res) => {
     message: `Cannot find ${req.originalUrl} on this server`
   });
 });
+
+app.use("/auth", authRoutes);
 
 module.exports = app;
