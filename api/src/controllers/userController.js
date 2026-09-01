@@ -1,33 +1,35 @@
 const { User } = require('../models/User');
+const jwt = require('jsonwebtoken');
+
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
+};
 
 
-exports.syncUser = async (req, res) => {
+exports.registerUser = async (req, res) => {
   try {
-    const { uid, email, name, picture, firebase} = req.firebaseUser;
-    const { firstName, lastName} = req.body;
+
+    const { email, password, firstName, lastName} = req.body;
 
     // Search for existing user profile
     let user = await User.findOne({ firebaseUid: uid });
 
-    if (!user) {
-      const provider = firebase?.sign_in_provider || 'password';
-      const userDisplayName = name || `${firstName || ''} ${lastName || ''}`.trim() || 'Pawsitive Habits User';
-
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
       // First-time user creation (
       user = await User.create({
-        firebaseUid: uid,
-        email: email || '',
-        firstName: firstName || '',
-        lastName: lastName || '',
-        displayName: userDisplayName || 'Pawsitive Habits User',
-        photoURL: picture || '',
-        authProvider: provider || ''
+        email,
+        password,
+        firstName,
+        lastName,
+        displayName: `${firstName} ${lastName}`.trim(),
+        authProvider: 'password'
       });
-      console.log(`Created new ${provider} user profile for UID: ${uid}`);
-    } else {
-      console.log(`Synchronized existing user profile for UID: ${uid}`);
-    }
 
+      const token = signToken(user._id); 
+    
     res.status(200).json({
       status: 'success',
       data: { user }
@@ -37,6 +39,27 @@ exports.syncUser = async (req, res) => {
       status: 'error',
       message: error.message
     });
+  }
+};
+
+exports.loginUser = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await user.comparePassword(password))) {
+      return res.status(401).json({ status: 'fail', message: 'Invalid email or password.' });
+    }
+
+    const token = signToken(user._id);
+
+    res.status(200).json({
+      status: 'success',
+      token,
+      data: { user }
+    });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
   }
 };
 

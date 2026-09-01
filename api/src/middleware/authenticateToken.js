@@ -1,4 +1,5 @@
 const admin = require('../config/firebaseAdmin');
+const jwt = require(jsonwebtoken)
 const { User } = require('../models/User');
 
 const authenticateToken = async (req, res, next) => {
@@ -14,32 +15,18 @@ const authenticateToken = async (req, res, next) => {
 
     const token = authHeader.split(' ')[1];
 
-    if (!token) {
-      return res.status(401).json({
-        status: 'fail',
-        message: 'Malformed authorization header. Token is missing.'
-      });
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      req.user = await User.findById(decoded.id);
+      return next();
+    } catch (jwtError) {
+      // If Custom JWT fails, attempt verification via Firebase Admin SDK (Google SSO)
+      const decodedFirebase = await admin.auth().verifyIdToken(token);
+      req.user = await User.findOne({ firebaseUid: decodedFirebase.uid });
+      return next();
     }
-
-    //  Verify token with Firebase Admin
-    const decodedToken = await admin.auth().verifyIdToken(token);
-
-    // Attach verified identity to req
-    req.firebaseUser = decodedToken;
-
-    // Fetch optional existing pawsitive habits profile from MongoDB
-    const userProfile = await User.findOne({ firebaseUid: decodedToken.uid });
-    if (userProfile) {
-      req.user = userProfile;
-    }
-
-    next();
   } catch (error) {
-    console.error('Authentication Error:', error.message);
-    return res.status(401).json({
-      status: 'fail',
-      message: 'Invalid, expired, or unverified authentication token.'
-    });
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 
