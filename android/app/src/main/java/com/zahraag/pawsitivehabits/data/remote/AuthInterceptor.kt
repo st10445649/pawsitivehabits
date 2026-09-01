@@ -1,5 +1,7 @@
 package com.zahraag.pawsitivehabits.data.remote
 
+import android.content.Context
+import android.content.SharedPreferences
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.runBlocking
@@ -35,16 +37,27 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     }
 }
 
-class TokenManager {
+class TokenManager(context: Context) {
+    private val prefs: SharedPreferences = context.getSharedPreferences(
+        PREF_NAME,
+        Context.MODE_PRIVATE
+    )
     private var customJwt: String? = null
 
     fun saveCustomJwtToken(token: String) {
-        customJwt = token
+        prefs.edit().putString(KEY_JWT_TOKEN, token).apply()
     }
 
-    fun getCustomJwtToken(): String? = customJwt
+    fun getCustomJwtToken(): String? {
+        return prefs.getString(KEY_JWT_TOKEN, null)
+    }
 
     fun clear() {
-        customJwt = null
+        prefs.edit().remove(KEY_JWT_TOKEN).apply()
+    }
+
+    companion object {
+        private const val PREF_NAME = "pawsitive_habits_auth_prefs"
+        private const val KEY_JWT_TOKEN = "custom_jwt_token"
     }
 }

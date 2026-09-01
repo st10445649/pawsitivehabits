@@ -3,26 +3,24 @@ package com.zahraag.pawsitivehabits.data.repository
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.models.User
-import com.zahraag.pawsitivehabits.data.remote.ApiService
 import com.zahraag.pawsitivehabits.data.remote.LoginRequest
 import com.zahraag.pawsitivehabits.data.remote.RegisterRequest
+import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository(
-    private val context: Context,
-    private val apiService: ApiService,
-    private val tokenManager: TokenManager
-) {
+object AuthRepository {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     //register with custom email
     suspend fun registerWithCustomEmail(
+        context: Context,
         email: String,
         pass: String,
         firstName: String,
         lastName: String
     ): Result<User> {
+        val apiService = RetrofitClient.getApiService(context)
         return try {
             val response = apiService.register(
                 RegisterRequest(
@@ -35,7 +33,7 @@ class AuthRepository(
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                body.token?.let { tokenManager.saveCustomJwtToken(it) }
+                body.token?.let { TokenManager(context).saveCustomJwtToken(it) }
 
                 val userDto = body.data?.user ?: throw Exception("User payload missing")
                 val user = User(
@@ -56,12 +54,13 @@ class AuthRepository(
         }
     }
 
-    suspend fun loginWithCustomEmail(email: String, pass: String): Result<User> {
+    suspend fun loginWithCustomEmail(context: Context,email: String, pass: String): Result<User> {
         return try {
+            val apiService = RetrofitClient.getApiService(context)
             val response = apiService.login(LoginRequest(email, pass))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                body.token?.let { tokenManager.saveCustomJwtToken(it) }
+                body.token?.let { TokenManager(context).saveCustomJwtToken(it) }
 
                 val userDto = body.data?.user ?: throw Exception("User payload missing")
                 val user = User(
@@ -82,7 +81,7 @@ class AuthRepository(
         }
     }
 
-    suspend fun authenticateAndSyncGoogleUser(idToken: String): Result<User> {
+    suspend fun authenticateAndSyncGoogleUser(context: Context, idToken: String): Result<User> {
         return try {
             // Authenticate with Firebase Auth via Google ID Token
             val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
@@ -90,6 +89,7 @@ class AuthRepository(
             val firebaseUser = authResult.user ?: throw Exception("Firebase Auth failed")
 
             // Sync with Node.js backend
+            val apiService = RetrofitClient.getApiService(context)
             val response = apiService.syncGoogleUser()
             if (response.isSuccessful && response.body() != null) {
                 val userDto = response.body()!!.data?.user ?: throw Exception("User payload missing")

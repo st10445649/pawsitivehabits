@@ -1,5 +1,7 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.User
@@ -16,15 +18,16 @@ sealed class AuthUiState {
     data class Error(val message: String) : AuthUiState()
 }
 
-class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
-
+class AuthViewModel(application: Application) : AndroidViewModel(application) {
+    private val repository = AuthRepository
+    private val context = application.applicationContext
     private val _uiState = MutableStateFlow<AuthUiState>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState> = _uiState.asStateFlow()
 
     fun register(email: String, pass: String, firstName: String, lastName: String) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val result = repository.registerWithCustomEmail(email, pass, firstName, lastName)
+            val result = repository.registerWithCustomEmail(context,email, pass, firstName, lastName)
             result.onSuccess { user ->
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
@@ -36,7 +39,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     fun login(email: String, pass: String) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val result = repository.loginWithCustomEmail(email, pass)
+            val result = repository.loginWithCustomEmail(context,email, pass)
             result.onSuccess { user ->
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
@@ -48,7 +51,7 @@ class AuthViewModel(private val repository: AuthRepository) : ViewModel() {
     fun handleGoogleIdToken(idToken: String) {
         _uiState.value = AuthUiState.Loading
         viewModelScope.launch {
-            val result = repository.authenticateAndSyncGoogleUser(idToken)
+            val result = repository.authenticateAndSyncGoogleUser(context,idToken)
             result.onSuccess { user ->
                 _uiState.value = AuthUiState.Success(user)
             }.onFailure { error ->
