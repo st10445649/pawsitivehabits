@@ -14,14 +14,6 @@ app.get('/api/test', (req, res) => {
   });
 });
 
-
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'fail',
-    message: `Cannot find ${req.originalUrl} on this server`
-  });
-});
-
 app.use("/auth", authRoutes);
 
 module.exports = app;

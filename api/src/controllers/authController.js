@@ -1,8 +1,9 @@
+const admin = require('../config/firebaseAdmin');
 const { User } = require('../models/User');
 const jwt = require('jsonwebtoken');
 const bcrypt = require("bcrypt");
 
-const generateToken = (userId) => {
+const signToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
@@ -11,7 +12,7 @@ const BCRYPT_ROUNDS = 12;
 //google sign in for sso
 exports.googleSignIn = async (req, res) => {
   try {
-    const { idToken } = req.body;
+    const idToken = req.body.idToken || req.headers.authorization?.split(' ')[1];
 
     if (!idToken) {
       return res.status(400).json({ status: 'fail', message: 'Google ID Token is required' });
