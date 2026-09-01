@@ -51,16 +51,19 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
+import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen (
-    onLoginSuccess: () -> Unit,
+    uiState: AuthUiState,
+    onLoginClick: (String, String) -> Unit,
     onGoogleSignInClick: () -> Unit,
     onNavigateToSignUp: () -> Unit
 ) {
@@ -128,16 +131,34 @@ fun LoginScreen (
 
                     Spacer(modifier = Modifier.height(24.dp))
 
+                    if (uiState is AuthUiState.Error) {
+                        Text(
+                            text = uiState.message,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+
                     // Login Button
                     Button(
-                        onClick = onLoginSuccess,
+                        onClick = { onLoginClick(email, password) },
+                        enabled = uiState !is AuthUiState.Loading,
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MintPrimary),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp)
                     ) {
-                        Text("LOGIN", color = SurfaceWhite, fontWeight = FontWeight.Bold)
+                        if (uiState is AuthUiState.Loading) {
+                            CircularProgressIndicator(
+                                color = SurfaceWhite,
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("LOGIN", color = SurfaceWhite, fontWeight = FontWeight.Bold)
+                        }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))

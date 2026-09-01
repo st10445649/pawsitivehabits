@@ -3,6 +3,10 @@ package com.zahraag.pawsitivehabits.Navigation
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,11 +38,26 @@ import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
 import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
+import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
+import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    authViewModel: AuthViewModel = viewModel(),
+    onGoogleSignInTriggered: () -> Unit = {}
+) {
     val rootnavController = rememberNavController()
+    val authUiState by authViewModel.uiState.collectAsState()
+
+    LaunchedEffect(authUiState) {
+        if (authUiState is AuthUiState.Success) {
+            rootnavController.navigate("main") {
+                popUpTo(Screen.Login.route) { inclusive = true }
+                popUpTo(Screen.SignUp.route) { inclusive = true }
+            }
+        }
+    }
 
     val startDestination = "login"
 
@@ -49,14 +68,12 @@ fun AppNavigation() {
 
         composable(Screen.Login.route) {
             LoginScreen(
-                onLoginSuccess = {
-
-                    rootnavController.navigate("main") {
-                        popUpTo(Screen.Login.route) { inclusive = true }
-                    }
+                uiState = authUiState,
+                onLoginClick = { email, password ->
+                    authViewModel.login(email, password)
                 },
                 onGoogleSignInClick = {
-
+                    onGoogleSignInTriggered()
                 },
                 onNavigateToSignUp = {
                     rootnavController.navigate(Screen.SignUp.route)

@@ -1,47 +1,114 @@
 package com.zahraag.pawsitivehabits.data.repository
 
-import android.R.attr.password
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.UserProfileChangeRequest
 import com.zahraag.pawsitivehabits.data.models.User
+import com.zahraag.pawsitivehabits.data.remote.ApiService
+import com.zahraag.pawsitivehabits.data.remote.LoginRequest
+import com.zahraag.pawsitivehabits.data.remote.RegisterRequest
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository(private val context: Context) {
+class AuthRepository(
+    private val context: Context,
+    private val apiService: ApiService,
+    private val tokenManager: TokenManager
+) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
-    suspend fun signUpWithEmail(
+    //register with custom email
+    suspend fun registerWithCustomEmail(
         email: String,
         pass: String,
         firstName: String,
         lastName: String
-    ): Pair<String, User>? {
-        // create User in Firebase Auth
-        val result = auth.createUserWithEmailAndPassword(email, pass).await()
-        val firebaseUser = result.user ?: return null
+    ): Result<User> {
+        return try {
+            val response = apiService.register(
+                RegisterRequest(
+                    email = email,
+                    password = pass,
+                    firstName = firstName,
+                    lastName = lastName
+                )
+            )
 
-        val fullName = "$firstName $lastName".trim()
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                body.token?.let { tokenManager.saveCustomJwtToken(it) }
 
-        // set Firebase Display Name Profile
-        val profileUpdates = UserProfileChangeRequest.Builder()
-            .setDisplayName(fullName)
-            .build()
-        firebaseUser.updateProfile(profileUpdates).await()
+                val userDto = body.data?.user ?: throw Exception("User payload missing")
+                val user = User(
+                    firebaseUid = userDto.firebaseUid ?: "",
+                    email = userDto.email,
+                    firstName = userDto.firstName ?: firstName,
+                    lastName = userDto.lastName ?: lastName,
+                    displayName = userDto.displayName,
+                    authProvider = "password",
+                    password = pass
+                )
+                Result.success(user)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Registration failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
-        // get Firebase ID Token for Backend Sync
-        val idToken = firebaseUser.getIdToken(true).await().token ?: return null
+    suspend fun loginWithCustomEmail(email: String, pass: String): Result<User> {
+        return try {
+            val response = apiService.login(LoginRequest(email, pass))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                body.token?.let { tokenManager.saveCustomJwtToken(it) }
 
-        // construct local entity payload
-        val localUser = User(
-            firebaseUid = firebaseUser.uid,
-            email = email,
-            firstName = firstName,
-            lastName = lastName,
-            displayName = fullName,
-            authProvider = "password",
-            password = pass
-        )
+                val userDto = body.data?.user ?: throw Exception("User payload missing")
+                val user = User(
+                    firebaseUid = userDto.firebaseUid ?: "",
+                    email = userDto.email,
+                    firstName = userDto.firstName ?: "",
+                    lastName = userDto.lastName ?: "",
+                    displayName = userDto.displayName,
+                    authProvider = "password",
+                    password = pass
+                )
+                Result.success(user)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Invalid email or password"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
-        return Pair("Bearer $idToken", localUser)
+    suspend fun authenticateAndSyncGoogleUser(idToken: String): Result<User> {
+        return try {
+            // Authenticate with Firebase Auth via Google ID Token
+            val credential = com.google.firebase.auth.GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val firebaseUser = authResult.user ?: throw Exception("Firebase Auth failed")
+
+            // Sync with Node.js backend
+            val response = apiService.syncGoogleUser()
+            if (response.isSuccessful && response.body() != null) {
+                val userDto = response.body()!!.data?.user ?: throw Exception("User payload missing")
+                val user = User(
+                    firebaseUid = firebaseUser.uid,
+                    email = firebaseUser.email ?: "",
+                    firstName = userDto.firstName ?: "",
+                    lastName = userDto.lastName ?: "",
+                    displayName = firebaseUser.displayName ?: "",
+                    authProvider = "google.com",
+                    password = "pass"
+                )
+                Result.success(user)
+            } else {
+                Result.failure(Exception("Backend sync failed"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 }
+
