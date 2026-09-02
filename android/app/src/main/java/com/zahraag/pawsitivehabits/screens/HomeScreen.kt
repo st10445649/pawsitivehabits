@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.outlined.Circle
@@ -41,7 +42,8 @@ fun HomeScreen(
     selectedPetId: String?,
     onSelectPet: (String) -> Unit,
     onNavigateToPetDetails: (String) -> Unit,
-    onNavigateToFeature: (route: String) -> Unit
+    onNavigateToFeature: (route: String) -> Unit,
+    onLogout: () -> Unit
 ) {
     val activePet = pets.find { it.id == selectedPetId } ?: pets.firstOrNull()
 
@@ -121,6 +123,18 @@ fun HomeScreen(
                             )
                         }
                     }
+                }
+                IconButton(
+                    onClick = onLogout,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(SurfaceWhite, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                        contentDescription = "Logout",
+                        tint = MintDarkGreen
+                    )
                 }
             }
 

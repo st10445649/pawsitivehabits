@@ -665,7 +665,6 @@ fun AddPetScreen(
                 onClick = {
                     if (name.isNotBlank()) {
                         val newPet = Pet(
-                            id = UUID.randomUUID().toString(),
                             userId = "",
                             name = name.trim(),
                             petType = petType,

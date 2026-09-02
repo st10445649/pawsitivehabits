@@ -14,6 +14,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
@@ -123,6 +124,16 @@ rootnavController = rootnavController
                     rootnavController.navigate("pet_details/$petId")
                 },
                 onNavigateToFeature = {
+                },
+                onLogout = {
+                    // Clear stored tokens and Firebase auth session
+                    tokenManager.clear()
+                    FirebaseAuth.getInstance().signOut()
+
+                    // Navigate to login and pop the entire backstack
+                    rootnavController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

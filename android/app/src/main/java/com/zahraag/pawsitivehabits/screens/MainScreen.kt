@@ -24,6 +24,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.BottomNavItem
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
@@ -123,6 +124,14 @@ fun MainScreen(rootnavController: NavHostController){
                         rootnavController.navigate("pet_details/$petId")
                     },
                     onNavigateToFeature = {
+                    },
+                    onLogout = {
+                        tokenManager.clear()
+                        FirebaseAuth.getInstance().signOut()
+
+                        rootnavController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 )
             }

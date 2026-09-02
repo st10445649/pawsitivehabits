@@ -110,5 +110,6 @@ dependencies {
     implementation("androidx.room:room-runtime:2.7.0-alpha11")
     implementation("androidx.room:room-ktx:2.7.0-alpha11")
     ksp("androidx.room:room-compiler:2.7.0-alpha11")
+    implementation("org.mongodb:bson:4.11.1")
 
 }
