@@ -2,6 +2,7 @@ package com.zahraag.pawsitivehabits.data.remote
 
 import android.content.Context
 import android.content.SharedPreferences
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.runBlocking
@@ -12,24 +13,29 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        var token = tokenManager.getCustomJwtToken()
-        val user = FirebaseAuth.getInstance().currentUser
+        val path = originalRequest.url.encodedPath
 
-        if (token.isNullOrEmpty()) {
-            val currentUser = FirebaseAuth.getInstance().currentUser
-            token = user?.let {
-                try {
-                    runBlocking { it.getIdToken(false).await().token }
-                } catch (e: Exception) {
-                    null
-                }
-            }
+        if (path.contains("/auth/login") ||
+            path.contains("/auth/register") ||
+            path.contains("/auth/google")
+        ) {
+            return chain.proceed(originalRequest)
         }
 
         val requestBuilder = originalRequest.newBuilder()
-        token?.isEmpty()?.let {
-            if (!it) {
-                requestBuilder.addHeader("Authorization", "Bearer $token")
+
+        var token = tokenManager.getCustomJwtToken()
+
+        if (token.isNullOrEmpty()) {
+            val user = FirebaseAuth.getInstance().currentUser
+            if (user != null) {
+                try {
+                    val task = user.getIdToken(false)
+                    val result = Tasks.await(task)
+                    token = result.token
+                } catch (e: Exception) {
+                    token = null
+                }
             }
         }
 
@@ -42,17 +48,24 @@ class TokenManager(context: Context) {
         PREF_NAME,
         Context.MODE_PRIVATE
     )
-    private var customJwt: String? = null
+
+    @Volatile
+    private var customJwt: String? = prefs.getString(KEY_JWT_TOKEN, null)
 
     fun saveCustomJwtToken(token: String) {
+        customJwt = token
         prefs.edit().putString(KEY_JWT_TOKEN, token).apply()
     }
 
     fun getCustomJwtToken(): String? {
-        return prefs.getString(KEY_JWT_TOKEN, null)
+        if (customJwt == null) {
+            customJwt = prefs.getString(KEY_JWT_TOKEN, null)
+        }
+        return customJwt
     }
 
     fun clear() {
+        customJwt=null
         prefs.edit().remove(KEY_JWT_TOKEN).apply()
     }
 
