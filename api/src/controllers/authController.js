@@ -7,7 +7,6 @@ const signToken = (userId) => {
   return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '30d' });
 };
 
-const BCRYPT_ROUNDS = 12;
 
 //google sign in for sso
 exports.googleSignIn = async (req, res) => {
@@ -72,11 +71,10 @@ exports.registerUser = async (req, res) => {
       return res.status(400).json({ message: 'User already exists' });
     }
 
-    const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
-      // First-time user creation (
+      // First-time user creation 
       user = await User.create({
         email,
-        password: passwordHash,
+        password,
         firstName,
         lastName,
         displayName: `${firstName} ${lastName}`.trim(),
@@ -109,7 +107,8 @@ exports.loginUser = async (req, res) => {
 
     const user = await User.findOne({ email }).select('+password');
 
-    if (!user || !(await bcrypt.compare(password, user.password))) {
+    const passwordMatches = await user.comparePassword(password);
+    if (!passwordMatches) {
       return res.status(401).json({ status: 'fail', message: 'Invalid email or password.' });
     }
 
