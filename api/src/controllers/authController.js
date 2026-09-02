@@ -67,9 +67,6 @@ exports.registerUser = async (req, res) => {
 
     const { email, password, firstName, lastName} = req.body;
 
-    // Search for existing user profile
-    let user = await User.findOne({ firebaseUid: uid });
-
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
@@ -79,7 +76,7 @@ exports.registerUser = async (req, res) => {
       // First-time user creation (
       user = await User.create({
         email,
-        passwordHash,
+        password: passwordHash,
         firstName,
         lastName,
         displayName: `${firstName} ${lastName}`.trim(),
