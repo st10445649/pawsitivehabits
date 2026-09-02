@@ -83,6 +83,10 @@ fun AppNavigation(
 
         composable(Screen.SignUp.route) {
             RegisterScreen(
+                uiState = authUiState,
+                onRegisterClick = { email, password, firstName, lastName ->
+                    authViewModel.register(email, password, firstName, lastName)
+                },
                 onSignUpSuccess = {
                     rootnavController.navigate("main") {
                         popUpTo(Screen.SignUp.route) { inclusive = true }

@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.screens
 
 import android.R.attr.fontWeight
+import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,9 +23,12 @@ import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.ui.theme.*
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
+import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 
 @Composable
 fun RegisterScreen(
+    uiState: AuthUiState,
+    onRegisterClick: (String, String, String, String) -> Unit,
     onSignUpSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit
 ) {
@@ -37,6 +41,13 @@ fun RegisterScreen(
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
+            onSignUpSuccess()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -118,22 +129,54 @@ fun RegisterScreen(
                         onTogglePassword = { confirmPasswordVisible = !confirmPasswordVisible }
                     )
 
+                    if (errorMessage != null || uiState is AuthUiState.Error) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage ?: (uiState as AuthUiState.Error).message,
+                            color = Color.Red,
+                            fontSize = 14.sp
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(36.dp))
 
                     Button(
-                        onClick = onSignUpSuccess,
+                        onClick = {
+                            when {
+                                password != confirmPassword -> {
+                                    errorMessage = "Passwords do not match"
+                                }
+
+                                email.isBlank() || password.isBlank() -> {
+                                    errorMessage = "Please fill in all required fields"
+                                }
+
+                                else -> {
+                                    errorMessage = null
+                                    onRegisterClick(email, password, firstName, lastName)
+                                }
+                            }
+                        },
+                        enabled = uiState !is AuthUiState.Loading,
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = SurfaceWhite),
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(52.dp)
                     ) {
-                        Text(
-                            text = "SIGN UP",
-                            color = MintDarkGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
+                        if (uiState is AuthUiState.Loading) {
+                            CircularProgressIndicator(
+                                color = MintDarkGreen,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        } else {
+                            Text(
+                                text = "SIGN UP",
+                                color = MintDarkGreen,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp
+                            )
+                        }
                     }
                 }
             }
