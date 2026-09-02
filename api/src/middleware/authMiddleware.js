@@ -1,21 +1,45 @@
+const admin = require('../config/firebaseAdmin');
 const jwt = require('jsonwebtoken');
+const { User } = require('../models/User');
 
-exports.protect = (req, res, next) => {
-  let token;
-
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    token = req.headers.authorization.split(' ')[1];
-  }
-
-  if (!token) {
-    return res.status(401).json({ status: 'fail', message: 'You are not logged in.' });
-  }
-
+const authenticateToken = async (req, res, next) => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'super_secret_jwt_key');
-    req.user = decoded; 
-    next();
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Authentication required. Please provide a Bearer token in the Authorization header.'
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.id);
+
+      if (!user) {
+        return res.status(401).json({ status: 'fail', message: 'User no longer exists.' });
+      }
+      
+      req.user = user;
+      return next();
+    } catch (jwtError) {
+      // If Custom JWT fails, attempt verification via Firebase Admin SDK (Google SSO)
+      const decodedFirebase = await admin.auth().verifyIdToken(token);
+      let user = await User.findOne({ $or: [{ googleId: decodedFirebase.uid }, { firebaseUid: decodedFirebase.uid }] });
+
+      if (!user) {
+        return res.status(401).json({ status: 'fail', message: 'User profile not found in database.' });
+      }
+
+      req.user = user;
+      return next();
+    }
   } catch (error) {
-    return res.status(401).json({ status: 'fail', message: 'Invalid or expired token.' });
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
+
+module.exports = authenticateToken;

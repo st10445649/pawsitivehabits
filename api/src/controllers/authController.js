@@ -87,6 +87,7 @@ exports.registerUser = async (req, res) => {
     
     res.status(200).json({
       status: 'success',
+      token,
       data: { user }
     });
   } catch (error) {
@@ -102,13 +103,18 @@ exports.loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.status(400).json({ status: 'fail', message: 'Please provide email and password' });
+    }
+
     const user = await User.findOne({ email }).select('+password');
-    const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    if (!passwordMatches) {
+
+    if (!user || !(await bcrypt.compare(password, user.password))) {
       return res.status(401).json({ status: 'fail', message: 'Invalid email or password.' });
     }
 
     const token = signToken(user._id);
+    user.password = undefined;
 
     res.status(200).json({
       status: 'success',
