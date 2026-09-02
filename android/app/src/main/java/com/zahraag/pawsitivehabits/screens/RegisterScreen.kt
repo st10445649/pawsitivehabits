@@ -98,15 +98,6 @@ fun RegisterScreen(
                         onValueChange = { email = it },
                         placeholder = "Email"
                     )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    UnderlineInputField(
-                        value = username,
-                        onValueChange = { username = it },
-                        placeholder = "Username"
-                    )
-
                     Spacer(modifier = Modifier.height(16.dp))
 
                     UnderlineInputField(

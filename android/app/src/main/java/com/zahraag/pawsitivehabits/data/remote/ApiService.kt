@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.data.remote
 
 import com.google.gson.annotations.SerializedName
+import com.zahraag.pawsitivehabits.data.models.Pet
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -27,13 +28,13 @@ interface ApiService {
 
     // pet operations
     @GET("pets")
-    suspend fun getPets(): Response<List<PetDto>>
+    suspend fun getPets(): Response<PetResponse>
 
     //create pet
     @POST("pets")
     suspend fun createPet(
-        @Body pet: PetDto
-    ): Response<PetDto>
+        @Body pet: Pet
+    ): Response<PetResponse>
 
     //delete pet
     @DELETE("pets/{id}")
@@ -60,13 +61,14 @@ data class UserDto(
     val authProvider: String
 )
 
-data class PetDto(
-    val id: String? = null,
-    val name: String,
-    val petType: String,
-    val breed: String? = null,
-    val isNeutered: Boolean = false,
-    val microchipId: String? = null
+data class PetResponse(
+    val status: String,
+    val data: PetData?
+)
+
+data class PetData(
+    val pet: Pet?,
+    val pets: List<Pet>?
 )
 
 data class RegisterRequest(
