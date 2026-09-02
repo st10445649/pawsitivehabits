@@ -11,6 +11,7 @@ data class Pet(
     @PrimaryKey var id: String = UUID.randomUUID().toString(),
     var userId: String,
     var name: String,
+    var gender: String,
     var petType: String,
     var breed: String? = null,
     var dateOfBirth: Long,
@@ -18,7 +19,10 @@ data class Pet(
     var microchipId: String? = null,
     var isNeutered: Boolean = false,
     var imageUrl: String? = null,
-    @Transient
+    var colour: String?=null,
+    var notes: String? = null,
+
+    @kotlinx.serialization.Transient
     var isSynced: Boolean = false
 )
 

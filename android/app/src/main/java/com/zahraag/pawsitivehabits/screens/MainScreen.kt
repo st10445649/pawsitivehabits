@@ -1,55 +1,38 @@
 package com.zahraag.pawsitivehabits.screens
 
-import android.R.attr.contentDescription
-import android.R.attr.onClick
-import android.R.attr.padding
-import android.R.attr.text
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material3.BottomAppBarState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.zahraag.pawsitivehabits.BottomNavItem
-import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.models.UserSettings
-import com.zahraag.pawsitivehabits.ui.theme.MintBackground
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
-import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
-import com.zahraag.pawsitivehabits.ui.theme.MintPrimary
-import com.zahraag.pawsitivehabits.ui.theme.TextDark
+import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,6 +41,12 @@ fun MainScreen(rootnavController: NavHostController){
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+
+    val context = LocalContext.current.applicationContext
+    val tokenManager = remember { TokenManager(context) }
+
+    val currentUserId = tokenManager.getUserId() ?: ""
 
     val bottomBarRoutes = listOf(
         BottomNavItem.Home.route,
@@ -139,14 +128,18 @@ fun MainScreen(rootnavController: NavHostController){
             }
 
             composable(BottomNavItem.Pets.route) {
+                val userId = tokenManager.getUserId() ?: ""
+                val petViewModel: PetViewModel = viewModel()
+
                 PetScreen(
-                    pets= samplePets,
-                    selectedPetId= samplePets.first().id,
-                    onSelectPet={ id -> samplePets.first().id},
+                    currentUserId = userId,
+                    viewModel = petViewModel,
                     onViewDetails = { petId ->
                         rootnavController.navigate("pet_details/$petId")
                     },
-                    onAddPetSubmitted={}
+                    onBackClick = {
+                        rootnavController.popBackStack()
+                    }
                 )
             }
             composable(BottomNavItem.Agenda.route) {

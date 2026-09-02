@@ -4,10 +4,10 @@ import android.content.Context
 import android.content.SharedPreferences
 import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
+import org.json.JSONObject
+import android.util.Base64
 
 class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -39,6 +39,10 @@ class AuthInterceptor(private val tokenManager: TokenManager) : Interceptor {
             }
         }
 
+        if (!token.isNullOrEmpty()) {
+            requestBuilder.header("Authorization", "Bearer $token")
+        }
+
         return chain.proceed(requestBuilder.build())
     }
 }
@@ -52,9 +56,15 @@ class TokenManager(context: Context) {
     @Volatile
     private var customJwt: String? = prefs.getString(KEY_JWT_TOKEN, null)
 
-    fun saveCustomJwtToken(token: String) {
+    fun saveCustomJwtToken(token: String, userId: String? = null) {
         customJwt = token
-        prefs.edit().putString(KEY_JWT_TOKEN, token).apply()
+        val extractedId = userId ?: extractUserIdFromToken(token)
+
+        prefs.edit().apply {
+            putString(KEY_JWT_TOKEN, token)
+            putString(KEY_USER_ID, extractedId)
+            apply()
+        }
     }
 
     fun getCustomJwtToken(): String? {
@@ -64,13 +74,32 @@ class TokenManager(context: Context) {
         return customJwt
     }
 
+    fun getUserId(): String? {
+        return prefs.getString(KEY_USER_ID, null)
+    }
+
     fun clear() {
         customJwt=null
         prefs.edit().remove(KEY_JWT_TOKEN).apply()
     }
 
+    private fun extractUserIdFromToken(token: String): String? {
+        return try {
+            val parts = token.split(".")
+            if (parts.size < 2) return null
+            val payloadJson = String(
+                Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)
+            )
+            val jsonObject = JSONObject(payloadJson)
+            if (jsonObject.has("id")) jsonObject.getString("id") else jsonObject.optString("sub", null)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
     companion object {
         private const val PREF_NAME = "pawsitive_habits_auth_prefs"
         private const val KEY_JWT_TOKEN = "custom_jwt_token"
+        private const val KEY_USER_ID = "current_user_id"
     }
 }

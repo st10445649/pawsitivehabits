@@ -36,6 +36,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,10 +51,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,6 +71,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.zahraag.pawsitivehabits.LabelText
 import com.zahraag.pawsitivehabits.MintInputField
@@ -82,17 +90,24 @@ import com.zahraag.pawsitivehabits.ui.theme.TextMuted
 import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.zahraag.pawsitivehabits.data.models.FeatureItem
 import com.zahraag.pawsitivehabits.data.models.featureItemsList
+import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import java.util.UUID
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PetScreen(
-    pets: List<Pet>,
-    selectedPetId: String?,
-    onSelectPet: (String) -> Unit,
-    onAddPetSubmitted:(Pet) -> Unit,
+    currentUserId: String,
+    viewModel: PetViewModel = viewModel(),
     onViewDetails: (String) -> Unit,
     onBackClick: () -> Unit = {}
 ) {
+    val pets by viewModel.getPets(currentUserId).collectAsStateWithLifecycle()
+    val selectedPetId by viewModel.selectedPetId.collectAsStateWithLifecycle()
+
     var showAddPetModal by remember { mutableStateOf(false) }
     Box(
         modifier = Modifier
@@ -105,7 +120,7 @@ fun PetScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                IconButton({}) {
+                IconButton(onClick = onBackClick) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
                         contentDescription = "Back",
@@ -163,12 +178,12 @@ fun PetScreen(
                             columns = GridCells.Fixed(1),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            items(pets) { pet ->
+                            items(pets, key = { it.id }) { pet ->
                                 DetailedPetProfileCard(
                                     pet = pet,
                                     isSelected = pet.id == selectedPetId,
                                     onClick = {
-                                        onSelectPet(pet.id)
+                                        viewModel.selectPet(pet.id)
                                         onViewDetails(pet.id) },
                                     latestWeightKg = 13.2,
                                     upcomingTaskCount = 2,
@@ -192,13 +207,19 @@ fun PetScreen(
     }
 
     if (showAddPetModal) {
-        AddPetScreen(
-           onBackClick = {},
-            onSavePet = { newPet ->
-                onAddPetSubmitted(newPet)
-                showAddPetModal = false
-            }
-        )
+        Dialog(
+            onDismissRequest = { showAddPetModal = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
+            AddPetScreen(
+                onBackClick = { showAddPetModal = false },
+                onSavePet = { newPet ->
+                    val petWithUser = newPet.copy(userId = currentUserId)
+                    viewModel.addPet(petWithUser)
+                    showAddPetModal = false
+                }
+            )
+        }
     }
 }
 
@@ -271,17 +292,22 @@ fun AddPetScreen(
     val scrollState = rememberScrollState()
 
     // Form States
-    var petType by remember { mutableStateOf("Cat") }
+    var petType by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
     var breed by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("Female") }
+    var gender by remember { mutableStateOf("") }
     var isNeutered by remember { mutableStateOf(false) }
     var colour by remember { mutableStateOf("") }
-    var microchipNumber by remember { mutableStateOf("04040303") }
+    var microchipNumber by remember { mutableStateOf("") }
     var birthdate by remember { mutableStateOf("") }
     var adoptionDate by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
     var selectedColorHex by remember { mutableStateOf(0xFFFF8A75) }
+
+    var showBirthdatePicker by remember { mutableStateOf(false) }
+    var showAdoptionDatePicker by remember { mutableStateOf(false) }
+    val birthdatePickerState = rememberDatePickerState()
+    val adoptionDatePickerState = rememberDatePickerState()
 
     // Dropdown States
     var petTypeExpanded by remember { mutableStateOf(false) }
@@ -520,14 +546,31 @@ fun AddPetScreen(
             // Field 8: Birthdate Picker
             Column(modifier = Modifier.fillMaxWidth()) {
                 LabelText("Birthdate")
-                MintInputField(
-                    value = birthdate,
-                    onValueChange = { birthdate = it },
-                    placeholder = "Select birthdate",
-                    trailingIcon = {
-                        Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
-                    }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showBirthdatePicker = true }
+                ) {
+                    MintInputField(
+                        value = birthdate,
+                        onValueChange = {},
+                        placeholder = "Select birthdate",
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = "Select Birthdate",
+                                tint = MintDarkGreen
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clickable { showBirthdatePicker = true }
+                        )
+
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -535,14 +578,30 @@ fun AddPetScreen(
             // Field 9: Adoption Date Picker
             Column(modifier = Modifier.fillMaxWidth()) {
                 LabelText("Adoption Date")
-                MintInputField(
-                    value = adoptionDate,
-                    onValueChange = { adoptionDate = it },
-                    placeholder = "Select adoption date",
-                    trailingIcon = {
-                        Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
-                    }
-                )
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showAdoptionDatePicker = true }
+                ) {
+                    MintInputField(
+                        value = adoptionDate,
+                        onValueChange = {},
+                        placeholder = "Select adoption date",
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.DateRange,
+                                contentDescription = null,
+                                tint = MintDarkGreen
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Box(
+                        modifier = Modifier
+                            .matchParentSize()
+                            .clickable { showAdoptionDatePicker = true }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(14.dp))
@@ -606,18 +665,24 @@ fun AddPetScreen(
                 onClick = {
                     if (name.isNotBlank()) {
                         val newPet = Pet(
-                            userId = "user_default",
-                            name = name,
+                            id = UUID.randomUUID().toString(),
+                            userId = "",
+                            name = name.trim(),
                             petType = petType,
                             breed = breed.ifBlank { null },
+                            gender = gender,
                             microchipId = microchipNumber.ifBlank { null },
                             isNeutered = isNeutered,
-                            dateOfBirth = System.currentTimeMillis(),
-                            adoptionDate = System.currentTimeMillis()
+                            colour = colour.ifBlank { null },
+                            dateOfBirth = birthdatePickerState.selectedDateMillis ?: System.currentTimeMillis(),
+                            adoptionDate = adoptionDatePickerState.selectedDateMillis ?: System.currentTimeMillis(),
+                            notes = notes.ifBlank { null },
+                            isSynced = false
                         )
                         onSavePet(newPet)
                     }
                 },
+                enabled = name.isNotBlank(),
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),
                 modifier = Modifier
@@ -635,7 +700,55 @@ fun AddPetScreen(
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+
+    if (showBirthdatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showBirthdatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        birthdate = formatDateMillis(birthdatePickerState.selectedDateMillis)
+                        showBirthdatePicker = false
+                    }
+                ) {
+                    Text("OK", color = MintDarkGreen, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBirthdatePicker = false }) {
+                    Text("Cancel", color = MintDarkGreen)
+                }
+            }
+        ) {
+            DatePicker(state = birthdatePickerState)
+        }
+    }
+
+    // Adoption Date Dialog
+    if (showAdoptionDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showAdoptionDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        adoptionDate = formatDateMillis(adoptionDatePickerState.selectedDateMillis)
+                        showAdoptionDatePicker = false
+                    }
+                ) {
+                    Text("OK", color = MintDarkGreen, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAdoptionDatePicker = false }) {
+                    Text("Cancel", color = MintDarkGreen)
+                }
+            }
+        ) {
+            DatePicker(state = adoptionDatePickerState)
+        }
+    }
 }
+
 
 
 @Composable
@@ -1224,4 +1337,12 @@ fun PetColorPickerSection() {
                 .background(selectedColor)
         )
     }
+}
+
+fun formatDateMillis(millis: Long?): String {
+    if (millis == null) return ""
+    val formatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()).apply {
+        timeZone = TimeZone.getTimeZone("UTC")
+    }
+    return formatter.format(Date(millis))
 }

@@ -6,6 +6,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -20,6 +22,7 @@ import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.models.UserSettings
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
@@ -40,6 +43,7 @@ import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
+import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -50,6 +54,11 @@ fun AppNavigation(
     val rootnavController = rememberNavController()
     val authUiState by authViewModel.uiState.collectAsState()
 
+    val context = LocalContext.current.applicationContext
+    val tokenManager = remember { TokenManager(context) }
+
+    val currentUserId = tokenManager.getUserId() ?: ""
+
     LaunchedEffect(authUiState) {
         if (authUiState is AuthUiState.Success) {
             rootnavController.navigate("main") {
@@ -59,7 +68,7 @@ fun AppNavigation(
         }
     }
 
-    val startDestination = "login"
+    val startDestination = if (currentUserId.isNotBlank()) "main" else Screen.Login.route
 
     NavHost(
         navController = rootnavController,
@@ -120,14 +129,18 @@ rootnavController = rootnavController
 
 
         composable(Screen.Pets.route) {
+            val userId = tokenManager.getUserId() ?: ""
+            val petViewModel: PetViewModel = viewModel()
+
             PetScreen(
-                pets= samplePets,
-                selectedPetId= samplePets.first().id,
-                onSelectPet={ id -> samplePets.first().id},
+                currentUserId = userId,
+                viewModel = petViewModel,
                 onViewDetails = { petId ->
                     rootnavController.navigate("pet_details/$petId")
                 },
-                onAddPetSubmitted={}
+                onBackClick = {
+                    rootnavController.popBackStack()
+                }
            )
         }
 

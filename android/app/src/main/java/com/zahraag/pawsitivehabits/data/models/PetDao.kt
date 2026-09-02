@@ -12,14 +12,14 @@ interface PetDao {
     fun getPetsByUserId(userId: String): Flow<List<Pet>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPet(pet: Pet)
+    suspend fun insertPet(pet: Pet): Long
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertPets(pets: List<Pet>)
+    suspend fun insertPets(pets: List<Pet>): List<Long>
 
     @Query("DELETE FROM pet_table WHERE id = :petId")
-    suspend fun deletePetById(petId: String)
+    suspend fun deletePetById(petId: String): Int
 
     @Query("DELETE FROM pet_table WHERE userId = :userId")
-    suspend fun clearUserPets(userId: String)
+    suspend fun clearUserPets(userId: String): Int
 }

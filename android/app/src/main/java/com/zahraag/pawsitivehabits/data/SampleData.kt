@@ -22,7 +22,8 @@ object SampleData {
             adoptionDate = System.currentTimeMillis() - 63072000000L,
             microchipId = "985141002341234",
             isNeutered = true,
-            imageUrl = null
+            imageUrl = null,
+            gender= "female"
         ),
         Pet(
             id = "2",
@@ -34,7 +35,10 @@ object SampleData {
             adoptionDate = System.currentTimeMillis() - 31536000000L,// ~1 yr old
             microchipId = "985141002341999",
             isNeutered = true,
-            imageUrl = null
+            imageUrl = null,
+            gender = "female",
+            colour = null
+
         )
     )
 

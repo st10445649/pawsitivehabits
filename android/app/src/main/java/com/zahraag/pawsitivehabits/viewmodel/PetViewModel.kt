@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.PetRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -28,6 +29,9 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _selectedPetId = MutableStateFlow<String?>(null)
     val selectedPetId: StateFlow<String?> = _selectedPetId.asStateFlow()
+
+    val tokenManager = TokenManager(context)
+    val userId = tokenManager.getUserId() ?: ""
 
     fun getPets(userId: String): StateFlow<List<Pet>> {
 
