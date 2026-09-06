@@ -68,4 +68,30 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             repository.createPet(petWithUser, imageUri)
         }
     }
+
+    fun updatePet(pet: Pet, newImageUri: Uri? = null) {
+        viewModelScope.launch {
+            val currentUserId = tokenManager.getUserId()
+            if (currentUserId.isNullOrEmpty()) {
+                Log.e("PET_VM", "Cannot update pet: User ID is null or empty.")
+                return@launch
+            }
+
+            val petWithUser = pet.copy(userId = currentUserId)
+            Log.d("PET_VM", "Updating pet ID: ${petWithUser.id}")
+            repository.updatePet(petWithUser, newImageUri)
+        }
+    }
+
+    fun deletePet(pet: Pet) {
+        viewModelScope.launch {
+            Log.d("PET_VM", "Deleting pet ID: ${pet.id}")
+
+            if (_selectedPetId.value == pet.id) {
+                _selectedPetId.update { null }
+            }
+
+            repository.deletePet(pet)
+        }
+    }
 }

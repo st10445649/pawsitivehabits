@@ -115,6 +115,79 @@ class PetRepository(
         }
     }
 
+    suspend fun updatePet(pet: Pet, newImageUri: Uri?): Result<Unit> {
+        //If a new image URI is provided, save it locally
+        val localPath = newImageUri?.let { saveImageToInternalStorage(context, it) } ?: pet.localImagePath
+
+        var petToUpdate = pet.copy(
+            localImagePath = localPath,
+            isSynced = false
+        )
+
+        // Immediate local update in Room DB
+        petDao.insertPet(petToUpdate)
+
+        return try {
+            // Upload new image to Supabase if local file was updated and cloud URL is unchanged/empty
+            var cloudUrl = petToUpdate.remoteImageUrl
+            if (newImageUri != null && localPath != null) {
+                val localFile = File(localPath)
+                if (localFile.exists()) {
+                    val fileName = "pet_${pet.id}_${System.currentTimeMillis()}.jpg"
+                    val bytes = localFile.readBytes()
+
+                    val bucket = supabase.storage.from(bucketName)
+                    bucket.upload(path = fileName, data = bytes) {
+                        upsert = true
+                    }
+                    cloudUrl = bucket.publicUrl(path = fileName)
+                }
+            }
+
+            petToUpdate = petToUpdate.copy(remoteImageUrl = cloudUrl)
+
+            val response = petApiService.updatePet(petToUpdate.id, petToUpdate)
+
+            if (response.isSuccessful) {
+                petDao.insertPet(petToUpdate.copy(isSynced = true))
+                Result.success(Unit)
+            } else {
+                Log.w("PET_REPO", "Online update failed (${response.code()}). Enqueuing background worker.")
+                scheduleSyncWorker()
+                Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            Log.w("PET_REPO", "Device offline or network exception on update. Enqueuing sync worker.", e)
+            scheduleSyncWorker()
+            Result.success(Unit)
+        }
+    }
+
+    suspend fun deletePet(pet: Pet): Result<Unit> {
+        // Delete immediately from Room DB
+        petDao.deletePetById(pet.id)
+
+        // Clean up local photo file if present
+        pet.localImagePath?.let { path ->
+            val file = File(path)
+            if (file.exists()) file.delete()
+        }
+
+        return try {
+            val response = petApiService.deletePet(pet.id)
+
+            if (!response.isSuccessful) {
+                Log.w("PET_REPO", "Online delete failed (${response.code()}). Enqueuing sync worker.")
+                scheduleSyncWorker()
+            }
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.w("PET_REPO", "Device offline or network exception on delete. Enqueuing sync worker.", e)
+            scheduleSyncWorker()
+            Result.success(Unit)
+        }
+    }
+
     suspend fun fetchRemotePets(userId: String) {
         try {
             val response = petApiService.getPets()

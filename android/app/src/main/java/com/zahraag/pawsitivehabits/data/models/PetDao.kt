@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.data.models
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -20,6 +21,8 @@ interface PetDao {
     suspend fun insertPets(pets: List<Pet>): List<Long>
     @Update
     suspend fun updatePet(pet: Pet)
+    @Delete
+    suspend fun deletePet(pet: Pet)
     @Query("DELETE FROM pet_table WHERE id = :petId")
     suspend fun deletePetById(petId: String): Int
 

@@ -8,6 +8,7 @@ import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 
 interface ApiService {
@@ -35,6 +36,12 @@ interface ApiService {
     suspend fun createPet(
         @Body pet: Pet
     ): Response<PetResponse>
+
+    @PUT("pets/{id}")
+    suspend fun updatePet(
+        @Path("id") petId: String,
+        @Body pet: Pet
+    ): Response<Unit>
 
     //delete pet
     @DELETE("pets/{id}")

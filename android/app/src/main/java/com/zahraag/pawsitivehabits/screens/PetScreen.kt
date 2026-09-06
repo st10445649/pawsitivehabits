@@ -115,6 +115,9 @@ fun PetScreen(
     val selectedPetId by viewModel.selectedPetId.collectAsStateWithLifecycle()
 
     var showAddPetModal by remember { mutableStateOf(false) }
+    var petToEdit by remember { mutableStateOf<Pet?>(null) }
+    var petToDelete by remember { mutableStateOf<Pet?>(null) }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -193,9 +196,9 @@ fun PetScreen(
                                         onViewDetails(pet.id) },
                                     latestWeightKg = 13.2,
                                     upcomingTaskCount = 2,
-                                    onViewDetails = { onViewDetails(pet.id)},
-                                    onEditClick = { },
-                                    onDeleteClick = {}
+                                    onViewDetails = { onViewDetails(pet.id) },
+                                    onEditClick = { petToEdit = pet },
+                                    onDeleteClick = { petToDelete = pet }
                                 )
                             }
                         }
@@ -212,20 +215,53 @@ fun PetScreen(
         }
     }
 
-    if (showAddPetModal) {
+    if (showAddPetModal || petToEdit != null) {
         Dialog(
-            onDismissRequest = { showAddPetModal = false },
+            onDismissRequest = { showAddPetModal = false
+                petToEdit = null},
             properties = DialogProperties(usePlatformDefaultWidth = false)
         ) {
             AddPetScreen(
-                onBackClick = { showAddPetModal = false },
-                onSavePet = { newPet, imageUri ->
-                    val petWithUser = newPet.copy(userId = currentUserId)
-                    viewModel.addPet(petWithUser, imageUri)
+                existingPet = petToEdit,
+                onBackClick = {
                     showAddPetModal = false
+                    petToEdit = null
+                },
+                onSavePet = { updatedPet, imageUri ->
+                    if (petToEdit != null) {
+                        viewModel.updatePet(updatedPet, imageUri)
+                    } else {
+                        val petWithUser = updatedPet.copy(userId = currentUserId)
+                        viewModel.addPet(petWithUser, imageUri)
+                    }
+                    showAddPetModal = false
+                    petToEdit = null
                 }
             )
         }
+    }
+    if (petToDelete != null) {
+        val targetPet = petToDelete!!
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { petToDelete = null },
+            title = { Text("Delete Pet Profile") },
+            text = { Text("Are you sure you want to delete ${targetPet.name}? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.deletePet(targetPet)
+                        petToDelete = null
+                    }
+                ) {
+                    Text("Delete", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { petToDelete = null }) {
+                    Text("Cancel", color = MintDarkGreen)
+                }
+            }
+        )
     }
 }
 
@@ -292,31 +328,33 @@ fun PetProfileCard(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPetScreen(
+    existingPet: Pet? = null,
     onBackClick: () -> Unit,
     onSavePet: (Pet, Uri?) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
     // Form States
-    var petType by remember { mutableStateOf("") }
-    var name by remember { mutableStateOf("") }
-    var breed by remember { mutableStateOf("") }
-    var gender by remember { mutableStateOf("") }
-    var isNeutered by remember { mutableStateOf(false) }
-    var colour by remember { mutableStateOf("") }
-    var microchipNumber by remember { mutableStateOf("") }
-    var birthdate by remember { mutableStateOf("") }
-    var adoptionDate by remember { mutableStateOf("") }
-    var notes by remember { mutableStateOf("") }
+    var petType by remember { mutableStateOf(existingPet?.petType ?:"") }
+    var name by remember { mutableStateOf(existingPet?.name ?:"") }
+    var breed by remember { mutableStateOf(existingPet?.breed ?:"") }
+    var gender by remember { mutableStateOf(existingPet?.gender ?:"") }
+    var isNeutered by remember { mutableStateOf(existingPet?.isNeutered ?:false) }
+    var colour by remember { mutableStateOf(existingPet?.colour ?:"") }
+    var microchipNumber by remember { mutableStateOf(existingPet?.microchipId ?:"") }
+    var birthdate by remember { mutableStateOf(existingPet?.dateOfBirth?.let { formatDateMillis(it) } ?: "")}
+    var adoptionDate by remember { mutableStateOf(existingPet?.adoptionDate?.let { formatDateMillis(it) } ?: "") }
+    var notes by remember { mutableStateOf(existingPet?.notes ?:"") }
 
     //photo picker states
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val existingImageUrl = existingPet?.remoteImageUrl ?: existingPet?.localImagePath
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         selectedImageUri = uri
     }
-    var selectedColorHex by remember { mutableStateOf("#FF8A75") }
+    var selectedColorHex by remember { mutableStateOf(existingPet?.customColour ?:"#FF8A75") }
 
     var showBirthdatePicker by remember { mutableStateOf(false) }
     var showAdoptionDatePicker by remember { mutableStateOf(false) }
@@ -336,8 +374,7 @@ fun AddPetScreen(
                 title = {
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Add Pet",
-                            fontSize = 26.sp,
+                            text = if (existingPet != null) "Edit Pet" else "Add Pet",                            fontSize = 26.sp,
                             fontWeight = FontWeight.Bold,
                             color = MintDarkGreen,
                             modifier = Modifier.padding(end = 48.dp)
@@ -630,7 +667,7 @@ fun AddPetScreen(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Field 10: Pet Theme Color Picker Box (6_2.png)
+            // Field 10: Pet Theme Color Picker Box
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface.copy(alpha = 0.6f)),
@@ -703,6 +740,9 @@ fun AddPetScreen(
                             dateOfBirth = birthdatePickerState.selectedDateMillis ?: System.currentTimeMillis(),
                             adoptionDate = adoptionDatePickerState.selectedDateMillis ?: System.currentTimeMillis(),
                             notes = notes.ifBlank { null },
+                            customColour = selectedColorHex,
+                            remoteImageUrl = existingPet?.remoteImageUrl,
+                            localImagePath = existingPet?.localImagePath,
                             isSynced = false
                         )
                         onSavePet(newPet, selectedImageUri)
@@ -716,8 +756,7 @@ fun AddPetScreen(
                     .height(50.dp)
             ) {
                 Text(
-                    text = "Save Pet",
-                    color = SurfaceWhite,
+                    text = if (existingPet != null) "Update Pet" else "Save Pet",                    color = SurfaceWhite,
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
@@ -733,7 +772,9 @@ fun AddPetScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        birthdate = formatDateMillis(birthdatePickerState.selectedDateMillis)
+                        birthdatePickerState.selectedDateMillis?.let { millis ->
+                            birthdate = formatDateMillis(millis)
+                        }
                         showBirthdatePicker = false
                     }
                 ) {
@@ -757,7 +798,9 @@ fun AddPetScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        adoptionDate = formatDateMillis(adoptionDatePickerState.selectedDateMillis)
+                        adoptionDatePickerState.selectedDateMillis?.let { millis ->
+                            adoptionDate = formatDateMillis(millis)
+                        }
                         showAdoptionDatePicker = false
                     }
                 ) {
@@ -789,6 +832,8 @@ fun DetailedPetProfileCard(
     onDeleteClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val petThemeColor = parsePetColor(pet.colour)
+    val imageSource = pet.remoteImageUrl ?: pet.localImagePath
 
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -880,12 +925,23 @@ fun DetailedPetProfileCard(
                         .background(MintCardSurface),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.petnav),
-                        contentDescription = null,
-                        tint = MintDarkGreen,
-                        modifier = Modifier.size(32.dp)
-                    )
+                    if (!imageSource.isNullOrBlank()) {
+                        AsyncImage(
+                            model = imageSource,
+                            contentDescription = pet.name,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Icon(
+                            painter = painterResource(id = R.drawable.petnav),
+                            contentDescription = null,
+                            tint = SurfaceWhite,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {
@@ -1390,4 +1446,13 @@ fun formatDateMillis(millis: Long?): String {
         timeZone = TimeZone.getTimeZone("UTC")
     }
     return formatter.format(Date(millis))
+}
+
+fun parsePetColor(colorHex: String?): Color {
+    if (colorHex.isNullOrBlank()) return MintCardSurface
+    return try {
+        Color(android.graphics.Color.parseColor(colorHex))
+    } catch (_: Exception) {
+        MintCardSurface
+    }
 }
