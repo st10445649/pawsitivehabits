@@ -1,7 +1,11 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +70,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -75,6 +80,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.github.skydoves.colorpicker.compose.HsvColorPicker
 import com.zahraag.pawsitivehabits.LabelText
 import com.zahraag.pawsitivehabits.MintInputField
@@ -213,9 +219,9 @@ fun PetScreen(
         ) {
             AddPetScreen(
                 onBackClick = { showAddPetModal = false },
-                onSavePet = { newPet ->
+                onSavePet = { newPet, imageUri ->
                     val petWithUser = newPet.copy(userId = currentUserId)
-                    viewModel.addPet(petWithUser)
+                    viewModel.addPet(petWithUser, imageUri)
                     showAddPetModal = false
                 }
             )
@@ -287,7 +293,7 @@ fun PetProfileCard(
 @Composable
 fun AddPetScreen(
     onBackClick: () -> Unit,
-    onSavePet: (Pet) -> Unit
+    onSavePet: (Pet, Uri?) -> Unit
 ) {
     val scrollState = rememberScrollState()
 
@@ -302,7 +308,15 @@ fun AddPetScreen(
     var birthdate by remember { mutableStateOf("") }
     var adoptionDate by remember { mutableStateOf("") }
     var notes by remember { mutableStateOf("") }
-    var selectedColorHex by remember { mutableStateOf(0xFFFF8A75) }
+
+    //photo picker states
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        selectedImageUri = uri
+    }
+    var selectedColorHex by remember { mutableStateOf("#FF8A75") }
 
     var showBirthdatePicker by remember { mutableStateOf(false) }
     var showAdoptionDatePicker by remember { mutableStateOf(false) }
@@ -359,26 +373,36 @@ fun AddPetScreen(
                 colors = CardDefaults.cardColors(containerColor = MintPrimary.copy(alpha = 0.5f)),
                 modifier = Modifier
                     .size(130.dp)
-                    .clickable { /* Trigger Image Picker */ }
+                    .clickable { photoPickerLauncher.launch("image/*") }
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.CameraAlt,
-                        contentDescription = "Add Photo",
-                        tint = SurfaceWhite,
-                        modifier = Modifier.size(42.dp)
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "Add Photo",
-                        color = SurfaceWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    if (selectedImageUri != null) {
+                        AsyncImage(
+                            model = selectedImageUri,
+                            contentDescription = "Pet Photo",
+                            modifier = Modifier.fillMaxSize(),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CameraAlt,
+                                contentDescription = "Add Photo",
+                                tint = SurfaceWhite,
+                                modifier = Modifier.size(42.dp)
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "Add Photo",
+                                color = SurfaceWhite,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
                 }
             }
 
@@ -630,7 +654,10 @@ fun AddPetScreen(
                         horizontalArrangement = Arrangement.spacedBy(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        PetColorPickerSection()
+                        PetColorPickerSection(
+                            selectedColorHex = selectedColorHex,
+                            onColorSelected = { hex -> selectedColorHex = hex }
+                        )
                     }
                 }
             }
@@ -678,7 +705,7 @@ fun AddPetScreen(
                             notes = notes.ifBlank { null },
                             isSynced = false
                         )
-                        onSavePet(newPet)
+                        onSavePet(newPet, selectedImageUri)
                     }
                 },
                 enabled = name.isNotBlank(),
@@ -1311,29 +1338,48 @@ fun FeatureShortcutCard(
     }
 }
 @Composable
-fun PetColorPickerSection() {
+fun PetColorPickerSection(
+    selectedColorHex: String,
+    onColorSelected: (String) -> Unit
+) {
     val controller = rememberColorPickerController()
 
-    var selectedColor by remember { mutableStateOf(Color.White) }
+    val initialColor = remember(selectedColorHex) {
+        try {
+            Color(android.graphics.Color.parseColor(selectedColorHex))
+        } catch (_: Exception) {
+            Color.White
+        }
+    }
+
+    var selectedColor by remember { mutableStateOf(initialColor) }
 
     Row(
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.CenterVertically
     ) {
-
         HsvColorPicker(
             modifier = Modifier.size(100.dp),
             controller = controller,
             onColorChanged = { colorEnvelope ->
                 selectedColor = colorEnvelope.color
+
+                // Convert Color to Hex string
+                val hexString = colorEnvelope.hexCode
+                val formattedHex = if (hexString.startsWith("#")) hexString else "#$hexString"
+                onColorSelected(formattedHex)
             }
         )
+
+        // Preview Circle
         Box(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
-                .size(100.dp)
+                .size(60.dp)
                 .clip(shape = CircleShape)
                 .background(selectedColor)
+                .border(2.dp, MintDarkGreen.copy(alpha = 0.2f), CircleShape)
         )
     }
 }

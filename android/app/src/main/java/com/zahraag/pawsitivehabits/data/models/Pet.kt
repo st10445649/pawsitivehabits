@@ -21,9 +21,11 @@ data class Pet(
     var adoptionDate: Long,
     var microchipId: String? = null,
     var isNeutered: Boolean = false,
-    var imageUrl: String? = null,
+    var localImagePath: String? = null,
+    var remoteImageUrl: String? = null,
     var colour: String?=null,
     var notes: String? = null,
+    var customColour: String? = "#FF5733",
 
     @kotlinx.serialization.Transient
     var isSynced: Boolean = false

@@ -3,13 +3,14 @@ import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
+import java.io.File
 
 object SupabaseClientProvider {
     val client = createSupabaseClient(
-        supabaseUrl = "https://mbsrsfaxgumeqckrlszk.supabase.co",
-        //get anonymous public key
-        supabaseKey ="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1ic3JzZmF4Z3VtZXFja3Jsc3prIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTE3NzIsImV4cCI6MjA5NTcyNzc3Mn0.WCNofL7AvAjmO7WsDAhzzCK_cgLb02PSZ1KSjpQCrvE"
-    ) {
+        supabaseUrl = "https://rktoswnposatxixloiwk.supabase.co",
+        supabaseKey = "sb_publishable_ZNoQ7hOCSkYEYhDXdjxJyA_L4ldjypQ"
+          ) {
         install(Postgrest)
         install(Storage)
         install(Auth)

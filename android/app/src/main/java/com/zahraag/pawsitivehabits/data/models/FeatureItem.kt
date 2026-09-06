@@ -18,7 +18,7 @@ val featureItemsList = listOf(
         subtitle = "Manage Pets",
         iconRes = R.drawable.bluepaws,
         backgroundColor = Color(0xFF5bc9ff),
-        route = Screen.AddPet.route
+        route = Screen.Pets.route
     ),
     FeatureItem(
         title = "Calendar",

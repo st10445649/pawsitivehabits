@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
+import android.net.Uri
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
@@ -25,7 +26,7 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
     )
 
     //Instantiate repository
-    private val repository = PetRepository(database.petDao(), apiService)
+    private val repository = PetRepository(database.petDao(), apiService, context)
 
     private val _selectedPetId = MutableStateFlow<String?>(null)
     val selectedPetId: StateFlow<String?> = _selectedPetId.asStateFlow()
@@ -50,9 +51,10 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
         _selectedPetId.update { petId }
     }
 
-    fun addPet(pet: Pet) {
+    fun addPet(pet: Pet, imageUri: Uri? = null) {
         viewModelScope.launch {
-            repository.createPet(pet)
+            val petWithUser = if (pet.userId.isEmpty()) pet.copy(userId = userId) else pet
+            repository.createPet(petWithUser, imageUri)
         }
     }
 }
