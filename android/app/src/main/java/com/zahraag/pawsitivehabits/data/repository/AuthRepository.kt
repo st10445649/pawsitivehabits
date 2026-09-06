@@ -34,9 +34,11 @@ object AuthRepository {
 
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                body.token?.let { TokenManager(context).saveCustomJwtToken(it) }
-
                 val userDto = body.data?.user ?: throw Exception("User payload missing")
+
+                body.token?.let { token ->
+                    TokenManager(context).saveCustomJwtToken(token, userId = userDto.id)
+                }
                 val user = User(
                     firebaseUid = userDto.firebaseUid ?: "",
                     email = userDto.email,
@@ -61,9 +63,11 @@ object AuthRepository {
             val response = apiService.login(LoginRequest(email, pass))
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                body.token?.let { TokenManager(context).saveCustomJwtToken(it) }
-
                 val userDto = body.data?.user ?: throw Exception("User payload missing")
+
+                body.token?.let { token ->
+                    TokenManager(context).saveCustomJwtToken(token, userId = userDto.id)
+                }
                 val user = User(
                     firebaseUid = userDto.firebaseUid ?: "",
                     email = userDto.email,
@@ -101,7 +105,7 @@ object AuthRepository {
                 val userDto = authResponse.data?.user ?: throw Exception("User payload missing")
 
                 authResponse.token?.let { token ->
-                    TokenManager(context).saveCustomJwtToken(token)
+                    TokenManager(context).saveCustomJwtToken(token, userId = userDto.id)
                 }
                 val user = User(
                     firebaseUid = firebaseUser.uid,

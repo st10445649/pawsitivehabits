@@ -2,6 +2,7 @@ package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
@@ -53,7 +54,17 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addPet(pet: Pet, imageUri: Uri? = null) {
         viewModelScope.launch {
-            val petWithUser = if (pet.userId.isEmpty()) pet.copy(userId = userId) else pet
+            val currentUserId = tokenManager.getUserId()
+
+            if (currentUserId.isNullOrEmpty()) {
+                Log.e("PET_VM", "Cannot create pet: User ID is null or empty. Ensure user is logged in.")
+                return@launch
+            }
+
+            // Explicitly attach the authenticated user's ID
+            val petWithUser = pet.copy(userId = currentUserId)
+
+            Log.d("PET_VM", "Creating pet for userId: $currentUserId")
             repository.createPet(petWithUser, imageUri)
         }
     }
