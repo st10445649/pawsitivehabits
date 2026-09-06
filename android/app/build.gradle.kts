@@ -62,6 +62,7 @@ dependencies {
     implementation(libs.androidx.material3)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.ui.graphics)
+    implementation(libs.androidx.work.runtime.ktx)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -111,5 +112,12 @@ dependencies {
     implementation("androidx.room:room-ktx:2.7.0-alpha11")
     ksp("androidx.room:room-compiler:2.7.0-alpha11")
     implementation("org.mongodb:bson:4.11.1")
+
+    implementation("io.coil-kt:coil-compose:2.1.0")
+    implementation("io.github.jan-tennert.supabase:storage-kt:3.1.4")
+    implementation("io.github.jan-tennert.supabase:auth-kt:3.1.4")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt:3.1.4")
+    implementation("io.ktor:ktor-client-android:3.0.3")
+
 
 }
