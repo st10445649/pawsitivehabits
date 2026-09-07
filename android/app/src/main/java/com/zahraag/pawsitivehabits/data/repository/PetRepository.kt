@@ -10,7 +10,7 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.android.gms.common.internal.service.Common.API
 import com.zahraag.pawsitivehabits.data.models.Pet
-import com.zahraag.pawsitivehabits.data.models.PetDao
+import com.zahraag.pawsitivehabits.data.dao.PetDao
 import com.zahraag.pawsitivehabits.data.remote.ApiService
 import com.zahraag.pawsitivehabits.helpers.OfflineSyncWorker
 import com.zahraag.pawsitivehabits.helpers.SupabaseClientProvider
