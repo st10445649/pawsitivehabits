@@ -1,78 +1,70 @@
+const mongoose = require('mongoose');
 const Pet = require('../models/Pet');
 
 const getUserId = (req) => req.user?.id || req.user?._id;
 
 exports.createPet = async (req, res) => {
   try {
-    const petData = { ...req.body };
-    const currentUserId = getUserId(req);
+    const rawUserId = getUserId(req);
+    if (!rawUserId) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
 
-    const petId = petData._id || petData.id;
+    // Cast string userId into valid Mongoose ObjectId for relational queries
+    const userId = new mongoose.Types.ObjectId(rawUserId);
+    const petId = req.body._id || req.body.id;
+
     if (!petId) {
       return res.status(400).json({ status: 'fail', message: 'Pet ID is required' });
     }
 
-    if (!petData.name || !petData.name.trim()) {
-      return res.status(400).json({ status: 'fail', message: 'Pet name is required' });
-    }
-
-    const remoteImageUrl = petData.remoteImageUrl || petData.imageUrl || null;
-
-    const updatePayload = {
+    // Spread request body directly & override key parameters
+    const petData = {
+      ...req.body,
       _id: petId,
-      userId: currentUserId,
-      name: petData.name.trim(),
-      gender: petData.gender,
-      petType: petData.petType,
-      breed: petData.breed ? petData.breed.trim() : null,
-      dateOfBirth: petData.dateOfBirth,
-      adoptionDate: petData.adoptionDate,
-      microchipId: petData.microchipId ? petData.microchipId.trim() : null,
-      isNeutered: petData.isNeutered || false,
-      localImageUrl: petData.localImageUrl || null,
-      remoteImageUrl,
-      colour: petData.colour,
-      notes: petData.notes ? petData.notes.trim() : null,
-      customColour: petData.customColour
+      userId
     };
 
+    if (petData.remoteImageUrl || petData.imageUrl) {
+      petData.remoteImageUrl = petData.remoteImageUrl || petData.imageUrl;
+    }
+
     const pet = await Pet.findOneAndUpdate(
-      { _id: petId, userId: currentUserId },
-      updatePayload,
-      { new: true, upsert: true, runValidators: true }
+      { _id: petId, userId },
+      { $set: { ...req.body, _id: petId, userId } },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
     );
 
     res.status(201).json({ status: 'success', data: { pet } });
   } catch (error) {
-    res.status(500).json({ status: 'error', message: error.message });
+    res.status(400).json({ status: 'fail', message: error.message });
   }
 };
 
 // Update existing pet by ID (PUT /pets/:id)
 exports.updatePet = async (req, res) => {
   try {
-    const currentUserId = getUserId(req);
-    const petId = req.params.id;
-
-    const petData = { ...req.body };
-
-    // Trim string inputs if present
-    if (petData.name) petData.name = petData.name.trim();
-    if (petData.breed) petData.breed = petData.breed.trim();
-    if (petData.microchipId) petData.microchipId = petData.microchipId.trim();
-    if (petData.notes) petData.notes = petData.notes.trim();
-
-    const updatedPet = await Pet.findOneAndUpdate(
-      { _id: petId, userId: currentUserId },
-      petData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedPet) {
-      return res.status(404).json({ status: 'fail', message: 'Pet not found or unauthorized' });
+    const rawUserId = req.user?.id || req.user?._id;
+    if (!rawUserId) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
     }
 
-    res.status(200).json({ status: 'success', data: { pet: updatedPet } });
+    const userId = new mongoose.Types.ObjectId(rawUserId);
+    const petId = req.params.id;
+
+    const petData = {
+      ...req.body,
+      _id: petId,
+      userId
+    };
+
+    const pet = await Pet.findOneAndUpdate(
+      { _id: petId, userId },
+      { $set: petData },
+      { new: true, upsert: true, runValidators: true, setDefaultsOnInsert: true }
+    );
+
+    res.status(200).json({ status: 'success', data: { pet } });
   } catch (error) {
     res.status(400).json({ status: 'fail', message: error.message });
   }
@@ -81,7 +73,11 @@ exports.updatePet = async (req, res) => {
 // Get all pets belonging to logged-in user
 exports.getUserPets = async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const userId = req.user?.id || req.user?._id;
+
+    if (!userId) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
     const pets = await Pet.find({ userId });
 
     res.status(200).json({ 
@@ -111,11 +107,19 @@ exports.getPetById = async (req, res) => {
 // Delete pet
 exports.deletePet = async (req, res) => {
   try {
-    const userId = getUserId(req);
+    const rawUserId = getUserId(req);
+    if (!rawUserId) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(rawUserId);
+
     const pet = await Pet.findOneAndDelete({ _id: req.params.id, userId });
+
     if (!pet) {
       return res.status(404).json({ status: 'fail', message: 'Pet not found or unauthorized' });
     }
+
     res.status(204).send();
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
