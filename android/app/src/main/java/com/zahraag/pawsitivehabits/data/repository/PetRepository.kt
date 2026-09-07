@@ -27,6 +27,7 @@ class PetRepository(
     private val bucketName = "pawsitivehabits"
 
     fun getPetsForUser(userId: String): Flow<List<Pet>> = petDao.getPetsByUserId(userId)
+    fun getPetsByUserId(userId: String): Flow<List<Pet>> = petDao.getPetsByUserId(userId)
     suspend fun createPet(pet: Pet, imageUri: Uri?): Result<Unit> {
         // Save local image file to internal app storage
         val localPath = imageUri?.let { saveImageToInternalStorage(context, it) }

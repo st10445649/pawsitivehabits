@@ -22,6 +22,6 @@ data class Routine(
     var reminderMinutes: Int = 30,
 
 
-    @Transient
+    @kotlinx.serialization.Transient
     var isSynced: Boolean = false
 )

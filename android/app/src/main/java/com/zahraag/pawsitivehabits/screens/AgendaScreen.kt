@@ -100,43 +100,11 @@ import com.zahraag.pawsitivehabits.data.models.RoutineTypeOption
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
+import com.zahraag.pawsitivehabits.viewmodel.EventViewModel
+import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
 import java.util.Locale.getDefault
 
 
-@Composable
-fun AgendaRoute(
-    viewModel: CalendarViewModel,
-    onNavigateBack: () -> Unit,
-    onNavigateToAddRoutine: () -> Unit,
-    onNavigateToAddCalendarEvent: () -> Unit,
-    onNavigateToEditCalendarEvent: (String) -> Unit
-) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-
-    if (uiState.isLoading) {
-        Box(
-            modifier = Modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(color = MintDarkGreen)
-        }
-    } else {
-        AgendaScreen(
-            routinesList = uiState.routines,
-            calendarEventsList = uiState.calendarEvents,
-            petNamesMap = uiState.petNamesMap,
-            selectedDate = uiState.selectedDate,
-            onDateSelected = viewModel::onDateSelected,
-            onNavigateBack = onNavigateBack,
-            onNavigateToAddRoutine = onNavigateToAddRoutine,
-            onNavigateToAddCalendarEvent = onNavigateToAddCalendarEvent,
-            onNavigateToEditCalendarEvent = onNavigateToEditCalendarEvent,
-            onDeleteCalendarEvent = { event ->
-                viewModel.deleteCalendarEvent(event)
-            }
-        )
-    }
-}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendaScreen(
@@ -144,6 +112,7 @@ fun AgendaScreen(
     calendarEventsList: List<CalendarEvents>,
     petNamesMap: Map<String, String>,
     selectedDate: LocalDate,
+    isLoading: Boolean = false,
     onDateSelected: (LocalDate) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAddRoutine: () -> Unit,
@@ -691,7 +660,7 @@ fun AgendaCard(
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun AddEditCalendarEventScreen(
-    petsMap: Map<String, String> = samplePetNamesMap,
+    petsMap: Map<String, String>,
     existingEvent: CalendarEvents? = null,
     currentUserId: String = "user123",
     onNavigateBack: () -> Unit,
@@ -879,6 +848,7 @@ fun AddEditCalendarEventScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            //date
             Text("Date", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(10.dp))
             Card(
@@ -944,7 +914,6 @@ fun AddEditCalendarEventScreen(
                         notes = notes
                     )
                     onSaveEvent(eventToSave)
-                    onNavigateBack()
                 },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),
@@ -1016,12 +985,19 @@ fun AgendaTabButton(
 
 @Composable
 fun AddRoutineScreen(
-    petsMap: Map<String, String> = mapOf("pet1" to "Nala", "pet2" to "Milo"),
-    currentUserId: String = "user123",
+    petsMap: Map<String, String>,
     onNavigateBack: () -> Unit,
-    onSaveRoutine: (Routine) -> Unit
+    onSaveRoutine: (
+        petId: String,
+        routineType: String,
+        customText: String,
+        frequency: String,
+        days: Set<String>,
+        startDate: LocalDate,
+        showInCalendar: Boolean
+    ) -> Unit
 ){
-    var selectedPetId by remember { mutableStateOf(petsMap.keys.firstOrNull() ?: "") }
+    var selectedPetId by remember(petsMap) { mutableStateOf(petsMap.keys.firstOrNull() ?: "") }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
 
     var selectedRoutineType by remember { mutableStateOf("Bath") }
@@ -1275,15 +1251,15 @@ fun AddRoutineScreen(
             Button(
                 onClick = {
                     val title = if (selectedRoutineType == "Custom") customRoutineText else selectedRoutineType
-                    val newRoutine = Routine(
-                        userId = currentUserId,
-                        petId = selectedPetId,
-                        title = title,
-                        frequency = selectedFrequency,
-                        startDate = startDate.toEpochMilli(),
-                        repeatDays = selectedDays.joinToString(",")
+                    onSaveRoutine(
+                        selectedPetId,
+                        selectedRoutineType,
+                        customRoutineText,
+                        selectedFrequency,
+                        selectedDays,
+                        startDate,
+                        showInCalendar
                     )
-                    onSaveRoutine(newRoutine)
                 },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),

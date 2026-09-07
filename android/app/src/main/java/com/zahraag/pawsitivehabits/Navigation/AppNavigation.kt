@@ -8,6 +8,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -44,7 +45,10 @@ import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
+import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
+import com.zahraag.pawsitivehabits.viewmodel.EventViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
+import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -174,34 +178,60 @@ rootnavController = rootnavController
         }
 
         composable(Screen.Agenda.route) {
+            val vm: CalendarViewModel = viewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+
             AgendaScreen(
-                routinesList = sampleRoutines,
-                calendarEventsList = sampleCalendarEvents,
-                petNamesMap = samplePetNamesMap,
+                routinesList = state.routines,
+                calendarEventsList = state.calendarEvents,
+                petNamesMap = state.petNamesMap,
+                selectedDate = state.selectedDate,
+                isLoading = state.isLoading,
+                onDateSelected = vm::onDateSelected,
+                onDeleteCalendarEvent = vm::deleteCalendarEvent,
                 onNavigateBack = { rootnavController.popBackStack() },
                 onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
                 onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                onDeleteCalendarEvent = { },
+                onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) }
             )
         }
 
         composable(Screen.AddCalendarEvent.route) {
+            val vm: EventViewModel = viewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+
             AddEditCalendarEventScreen(
-                petsMap = samplePetNamesMap,
-                existingEvent= null,
-                currentUserId= "user123",
-                onSaveEvent= {},
+                petsMap = state.petsMap,
+                existingEvent = null,
+                currentUserId = vm.userId,
                 onNavigateBack = { rootnavController.popBackStack() },
-                )
+                onSaveEvent = { event ->
+                    vm.saveCalendarEvent(event) {
+                        rootnavController.popBackStack()
+                    }
+                }
+            )
         }
 
         composable(Screen.AddRoutine.route) {
+            val vm: RoutineViewModel = viewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+
             AddRoutineScreen(
-                petsMap = samplePetNamesMap,
-                currentUserId = "user123",
+                petsMap = state.petsMap,
                 onNavigateBack = { rootnavController.popBackStack() },
-                onSaveRoutine = {}
+                onSaveRoutine = { petId, routineType, customText, frequency, days, startDate, showInCalendar ->
+                    vm.createRoutine(
+                        petId = petId,
+                        routineType = routineType,
+                        customText = customText,
+                        frequency = frequency,
+                        days = days,
+                        startDate = startDate,
+                        showInCalendar = showInCalendar,
+                        onSuccess = { rootnavController.popBackStack() }
+                    )
+                }
             )
         }
 

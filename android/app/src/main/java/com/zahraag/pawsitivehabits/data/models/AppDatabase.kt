@@ -4,16 +4,22 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import com.zahraag.pawsitivehabits.data.dao.CalendarEventsDao
 import com.zahraag.pawsitivehabits.data.dao.PetDao
+import com.zahraag.pawsitivehabits.data.dao.RoutineDao
+import com.zahraag.pawsitivehabits.data.dao.RoutineLogsDao
 
 @Database(
-    entities = [Pet::class],
-    version = 6,
+    entities = [Pet::class, CalendarEvents::class, Routine::class, RoutineLogs::class],
+    version = 7,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun petDao(): PetDao
+    abstract fun calendarDao(): CalendarEventsDao
+    abstract fun routineDao(): RoutineDao
+    abstract fun routineLogsDao(): RoutineLogsDao
 
     companion object {
         @Volatile

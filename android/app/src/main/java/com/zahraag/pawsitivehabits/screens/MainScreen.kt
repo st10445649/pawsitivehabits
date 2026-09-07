@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -33,6 +34,7 @@ import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
+import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -151,17 +153,23 @@ fun MainScreen(rootnavController: NavHostController){
                     }
                 )
             }
-            composable(BottomNavItem.Agenda.route) {
+            composable(Screen.Agenda.route) {
+                val vm: CalendarViewModel = viewModel()
+                val state by vm.uiState.collectAsStateWithLifecycle()
+
                 AgendaScreen(
-                    routinesList = sampleRoutines,
-                    calendarEventsList = sampleCalendarEvents,
-                    petNamesMap = samplePetNamesMap,
-                    onNavigateBack = { navController.popBackStack() },
+                    routinesList = state.routines,
+                    calendarEventsList = state.calendarEvents,
+                    petNamesMap = state.petNamesMap,
+                    selectedDate = state.selectedDate,
+                    isLoading = state.isLoading,
+                    onDateSelected = vm::onDateSelected,
+                    onDeleteCalendarEvent = vm::deleteCalendarEvent,
+                    onNavigateBack = { rootnavController.popBackStack() },
                     onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
                     onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                    onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                    onDeleteCalendarEvent = { },
-                    )
+                    onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) }
+                )
             }
             composable(BottomNavItem.Features.route) {
                 FeaturesScreen(onFeatureClick = { route -> rootnavController.navigate(route) })

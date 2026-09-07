@@ -1,10 +1,14 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Routine
-import com.zahraag.pawsitivehabits.data.repository.CalendarRepository
+import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.CalendarRepositoryImpl
 import com.zahraag.pawsitivehabits.data.repository.PetRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,28 +27,31 @@ data class AgendaUiState(
     val petNamesMap: Map<String, String> = emptyMap(),
     val isLoading: Boolean = false
 )
+class CalendarViewModel(application: Application) : AndroidViewModel(application) {
 
-class CalendarViewModel(
-    private val repository: CalendarRepository,
-    private val petRepository: PetRepository,
-    private val userId: String
-) : ViewModel() {
+    private val context = application.applicationContext
+    private val database = AppDatabase.getDatabase(application)
+    private val apiService = RetrofitClient.getApiService(context)
+
+    private val calendarRepository =
+        CalendarRepositoryImpl(database.calendarDao(), database.routineDao(), database.routineLogsDao())
+    private val petRepository = PetRepository(database.petDao(), apiService, context)
+
+    private val tokenManager = TokenManager(context)
+    val userId: String = tokenManager.getUserId() ?: ""
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
 
     val uiState: StateFlow<AgendaUiState> = combine(
-        repository.getRoutinesForUser(userId),
-        repository.getAllEventsForUser(userId),
-        petRepository.getPetsByUserId(userId),
+        calendarRepository.getRoutinesForUser(userId),
+        calendarRepository.getAllEventsForUser(userId),
+        petRepository.getPetsForUser(userId),
         _selectedDate
     ) { routines, events, pets, selectedDate ->
-
-        val petMap = pets.associate { it.id to it.name }
-
         AgendaUiState(
             routines = routines,
             calendarEvents = events,
-            petNamesMap = petMap,
+            petNamesMap = pets.associate { it.id to it.name },
             selectedDate = selectedDate,
             isLoading = false
         )
@@ -58,15 +65,22 @@ class CalendarViewModel(
         _selectedDate.value = date
     }
 
-    fun deleteCalendarEvent(event: CalendarEvents) {
+    fun saveCalendarEvent(event: CalendarEvents, onSuccess: () -> Unit = {}) {
         viewModelScope.launch {
-            repository.deleteEvent(event.id)
-        }
-    }
-    fun onRoutineToggled(routineId: String, petId: String) {
-        viewModelScope.launch {
-            repository.toggleRoutineCompletion(routineId, petId, _selectedDate.value)
+            calendarRepository.insertEvent(event)
+            onSuccess()
         }
     }
 
+    fun deleteCalendarEvent(event: CalendarEvents) {
+        viewModelScope.launch {
+            calendarRepository.deleteEvent(event.id)
+        }
+    }
+
+    fun onRoutineToggled(routineId: String, petId: String) {
+        viewModelScope.launch {
+            calendarRepository.toggleRoutineCompletion(routineId, petId, _selectedDate.value)
+        }
+    }
 }

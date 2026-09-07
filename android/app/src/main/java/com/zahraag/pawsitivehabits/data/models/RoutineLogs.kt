@@ -14,6 +14,6 @@ data class RoutineLogs(
     var routineId: String,
     var petId: String,
     var completedAt: Long,
-    @Transient
+    @kotlinx.serialization.Transient
     var isSynced: Boolean = false
 )
