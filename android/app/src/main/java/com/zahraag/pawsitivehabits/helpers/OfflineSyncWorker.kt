@@ -56,7 +56,7 @@ class OfflineSyncWorker(
                 )
 
                 // Sync to API
-                val response = apiService.createPet(syncedPet)
+                val response = apiService.updatePet(syncedPet.id,syncedPet)
 
                 if (response.isSuccessful) {
                     // Update Room DB to reflect synced state

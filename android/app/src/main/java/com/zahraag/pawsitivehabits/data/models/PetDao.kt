@@ -28,4 +28,7 @@ interface PetDao {
 
     @Query("DELETE FROM pet_table WHERE userId = :userId")
     suspend fun clearUserPets(userId: String): Int
+
+    @Query("SELECT * FROM pet_table ORDER BY name ASC")
+    fun getAllPets(): Flow<List<Pet>>
 }

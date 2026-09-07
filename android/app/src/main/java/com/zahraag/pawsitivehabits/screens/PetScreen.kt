@@ -62,6 +62,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -97,6 +98,7 @@ import com.github.skydoves.colorpicker.compose.rememberColorPickerController
 import com.zahraag.pawsitivehabits.data.models.FeatureItem
 import com.zahraag.pawsitivehabits.data.models.featureItemsList
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -111,7 +113,7 @@ fun PetScreen(
     onViewDetails: (String) -> Unit,
     onBackClick: () -> Unit = {}
 ) {
-    val pets by viewModel.getPets(currentUserId).collectAsStateWithLifecycle()
+    val pets by viewModel.localUserPets.collectAsStateWithLifecycle()
     val selectedPetId by viewModel.selectedPetId.collectAsStateWithLifecycle()
 
     var showAddPetModal by remember { mutableStateOf(false) }
@@ -265,66 +267,6 @@ fun PetScreen(
     }
 }
 
-@Composable
-fun PetProfileCard(
-    pet: Pet,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        border = if (isSelected) BorderStroke(3.dp, MintDarkGreen) else null,
-        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 8.dp else 2.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() }
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(CircleShape)
-                    .background(MintCardSurface),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = R.drawable.petnav),
-                    contentDescription = null,
-                    tint = MintDarkGreen,
-                    modifier = Modifier.size(36.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Text(
-                text = pet.name,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = TextDark
-            )
-            Text(
-                text = "${pet.petType} • ${pet.breed ?: "Unknown"}",
-                style = MaterialTheme.typography.bodySmall,
-                color = TextMuted
-            )
-
-            if (pet.microchipId != null) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = "${pet.petType} • ${pet.microchipId ?: " "}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextMuted
-                )
-            }
-        }
-    }
-}
-
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddPetScreen(
@@ -348,7 +290,13 @@ fun AddPetScreen(
 
     //photo picker states
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
-    val existingImageUrl = existingPet?.remoteImageUrl ?: existingPet?.localImagePath
+    val existingImageUrl = remember(existingPet) {
+        when {
+            !existingPet?.remoteImageUrl.isNullOrBlank() -> existingPet?.remoteImageUrl
+            !existingPet?.localImagePath.isNullOrBlank() -> File(existingPet.localImagePath)
+            else -> null
+        }
+    }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -413,31 +361,44 @@ fun AddPetScreen(
                     .clickable { photoPickerLauncher.launch("image/*") }
             ) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    if (selectedImageUri != null) {
-                        AsyncImage(
-                            model = selectedImageUri,
-                            contentDescription = "Pet Photo",
-                            modifier = Modifier.fillMaxSize(),
-                            contentScale = ContentScale.Crop
-                        )
-                    } else {
-                        Column(
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.CameraAlt,
-                                contentDescription = "Add Photo",
-                                tint = SurfaceWhite,
-                                modifier = Modifier.size(42.dp)
+                    when {
+                        selectedImageUri != null -> {
+                            AsyncImage(
+                                model = selectedImageUri,
+                                contentDescription = "Pet Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "Add Photo",
-                                color = SurfaceWhite,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 14.sp
+                        }
+
+                        existingImageUrl != null -> {
+                            AsyncImage(
+                                model = existingImageUrl,
+                                contentDescription = "Existing Pet Photo",
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
                             )
+                        }
+
+                        else -> {
+                            Column(
+                                verticalArrangement = Arrangement.Center,
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CameraAlt,
+                                    contentDescription = "Add Photo",
+                                    tint = SurfaceWhite,
+                                    modifier = Modifier.size(42.dp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "Add Photo",
+                                    color = SurfaceWhite,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                            }
                         }
                     }
                 }
@@ -729,6 +690,7 @@ fun AddPetScreen(
                 onClick = {
                     if (name.isNotBlank()) {
                         val newPet = Pet(
+                            id = existingPet?.id ?: UUID.randomUUID().toString(),
                             userId = "",
                             name = name.trim(),
                             petType = petType,
@@ -832,12 +794,12 @@ fun DetailedPetProfileCard(
     onDeleteClick: () -> Unit
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    val petThemeColor = parsePetColor(pet.colour)
+    val petThemeColor = pet.customColour.toComposeColor()
     val imageSource = pet.remoteImageUrl ?: pet.localImagePath
 
     Card(
         shape = RoundedCornerShape(24.dp),
-        border = if (isSelected) BorderStroke(3.dp, MintDarkGreen) else BorderStroke(1.dp, MintCardSurface),
+        border = if (isSelected) BorderStroke(6.dp, petThemeColor) else BorderStroke(4.dp, petThemeColor),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = if (isSelected) 6.dp else 2.dp),
         modifier = Modifier
@@ -846,26 +808,6 @@ fun DetailedPetProfileCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             // Top Row: Selected Badge & Options Menu
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (isSelected) {
-                    Surface(
-                        color = MintDarkGreen,
-                        shape = RoundedCornerShape(50)
-                    ) {
-                        Text(
-                            text = "ACTIVE",
-                            color = SurfaceWhite,
-                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                        )
-                    }
-                } else {
-                    Spacer(modifier = Modifier.width(1.dp))
-                }
 
                 Box {
                     IconButton(
@@ -909,7 +851,7 @@ fun DetailedPetProfileCard(
                         )
                     }
                 }
-            }
+
 
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -1410,6 +1352,11 @@ fun PetColorPickerSection(
 
     var selectedColor by remember { mutableStateOf(initialColor) }
 
+    LaunchedEffect(initialColor) {
+        selectedColor = initialColor
+        controller.selectByColor(initialColor, fromUser = false)
+    }
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -1419,26 +1366,34 @@ fun PetColorPickerSection(
             modifier = Modifier.size(100.dp),
             controller = controller,
             onColorChanged = { colorEnvelope ->
-                selectedColor = colorEnvelope.color
+                if (colorEnvelope.fromUser) {
+                    selectedColor = colorEnvelope.color
 
-                // Convert Color to Hex string
-                val hexString = colorEnvelope.hexCode
-                val formattedHex = if (hexString.startsWith("#")) hexString else "#$hexString"
-                onColorSelected(formattedHex)
+                    // Convert Color to Hex string
+                    val hexCode = colorEnvelope.hexCode
+                    val formattedHex = if (hexCode.startsWith("#")) hexCode else "#$hexCode"
+                    onColorSelected(formattedHex)
+                }
             }
         )
+
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Preview Circle
         Box(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
-                .size(60.dp)
+                .size(100.dp)
                 .clip(shape = CircleShape)
                 .background(selectedColor)
-                .border(2.dp, MintDarkGreen.copy(alpha = 0.2f), CircleShape)
+                .border(2.dp, SurfaceWhite.copy(alpha = 0.2f), CircleShape)
         )
+
+        Spacer(modifier = Modifier.width(12.dp))
     }
 }
+
+
 
 fun formatDateMillis(millis: Long?): String {
     if (millis == null) return ""
@@ -1448,11 +1403,32 @@ fun formatDateMillis(millis: Long?): String {
     return formatter.format(Date(millis))
 }
 
-fun parsePetColor(colorHex: String?): Color {
-    if (colorHex.isNullOrBlank()) return MintCardSurface
+
+fun String?.toComposeColor(defaultColor: Color = Color(0xFFFF7BC9)): Color {
+    if (this.isNullOrBlank()) return defaultColor
+
     return try {
-        Color(android.graphics.Color.parseColor(colorHex))
-    } catch (_: Exception) {
-        MintCardSurface
+        var cleanHex = this.removePrefix("#").trim()
+
+        if (cleanHex.length == 9 && cleanHex.startsWith("ff", ignoreCase = true)) {
+            cleanHex = cleanHex.substring(1) // remove extra leading char
+        }
+
+        when (cleanHex.length) {
+            6 -> {
+                val colorLong = cleanHex.toLong(16) or 0xFF000000
+                Color(colorLong)
+            }
+            8 -> {
+                val alpha = cleanHex.substring(0, 2).toInt(16)
+                val red = cleanHex.substring(2, 4).toInt(16)
+                val green = cleanHex.substring(4, 6).toInt(16)
+                val blue = cleanHex.substring(6, 8).toInt(16)
+                Color(red = red, green = green, blue = blue, alpha = alpha)
+            }
+            else -> defaultColor
+        }
+    } catch (e: Exception) {
+        defaultColor
     }
 }

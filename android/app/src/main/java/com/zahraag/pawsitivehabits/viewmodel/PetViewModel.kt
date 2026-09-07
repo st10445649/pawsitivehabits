@@ -4,6 +4,8 @@ import android.app.Application
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.Pet
@@ -94,4 +96,11 @@ class PetViewModel(application: Application) : AndroidViewModel(application) {
             repository.deletePet(pet)
         }
     }
+
+    val localUserPets: StateFlow<List<Pet>> = repository.getLocalPetsForUser(userId)
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
 }

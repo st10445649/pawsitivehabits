@@ -13,7 +13,6 @@ object SupabaseClientProvider {
           ) {
         install(Postgrest)
         install(Storage)
-        install(Auth)
 
     }
 
