@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface CalendarEventsDao {
+    @Query("SELECT * FROM calendarEvents_table WHERE userId = :userId ORDER BY time ASC")
+    fun getAllEventsForUser(userId: String): Flow<List<CalendarEvents>>
     @Query("SELECT * FROM calendarEvents_table WHERE userId = :userId AND date BETWEEN :startTimestamp AND :endTimestamp")
     fun getEventsForDateRange(userId: String, startTimestamp: Long, endTimestamp: Long): Flow<List<CalendarEvents>>
 

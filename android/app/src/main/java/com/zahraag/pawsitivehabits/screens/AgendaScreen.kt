@@ -37,6 +37,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -69,6 +70,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
@@ -97,19 +99,57 @@ import com.zahraag.pawsitivehabits.data.models.CategoryOption
 import com.zahraag.pawsitivehabits.data.models.RoutineTypeOption
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
+import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import java.util.Locale.getDefault
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun AgendaScreen(
-    routinesList: List<Routine> = emptyList(),
-    calendarEventsList: List<CalendarEvents> = emptyList(),
-    petNamesMap: Map<String, String> = emptyMap(),
+fun AgendaRoute(
+    viewModel: CalendarViewModel,
     onNavigateBack: () -> Unit,
     onNavigateToAddRoutine: () -> Unit,
     onNavigateToAddCalendarEvent: () -> Unit,
-    onNavigateToEditCalendarEvent: (String) -> Unit = {},
-    onDeleteCalendarEvent: (CalendarEvents) -> Unit = {}
+    onNavigateToEditCalendarEvent: (String) -> Unit
+) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    if (uiState.isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = MintDarkGreen)
+        }
+    } else {
+        AgendaScreen(
+            routinesList = uiState.routines,
+            calendarEventsList = uiState.calendarEvents,
+            petNamesMap = uiState.petNamesMap,
+            selectedDate = uiState.selectedDate,
+            onDateSelected = viewModel::onDateSelected,
+            onNavigateBack = onNavigateBack,
+            onNavigateToAddRoutine = onNavigateToAddRoutine,
+            onNavigateToAddCalendarEvent = onNavigateToAddCalendarEvent,
+            onNavigateToEditCalendarEvent = onNavigateToEditCalendarEvent,
+            onDeleteCalendarEvent = { event ->
+                viewModel.deleteCalendarEvent(event)
+            }
+        )
+    }
+}
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AgendaScreen(
+    routinesList: List<Routine>,
+    calendarEventsList: List<CalendarEvents>,
+    petNamesMap: Map<String, String>,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
+    onNavigateBack: () -> Unit,
+    onNavigateToAddRoutine: () -> Unit,
+    onNavigateToAddCalendarEvent: () -> Unit,
+    onNavigateToEditCalendarEvent: (String) -> Unit,
+    onDeleteCalendarEvent: (CalendarEvents) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -173,6 +213,8 @@ fun AgendaScreen(
                     routines = routinesList,
                     events = calendarEventsList,
                     petNamesMap = petNamesMap,
+                    selectedDate = selectedDate,
+                    onDateSelected = onDateSelected,
                     onEditEvent = onNavigateToEditCalendarEvent,
                     onDeleteEvent = onDeleteCalendarEvent
                 )
@@ -190,7 +232,7 @@ fun AgendaScreen(
                 .padding(24.dp)
                 .size(64.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Routine", modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Add, contentDescription = "Add Item", modifier = Modifier.size(32.dp))
         }
 
         if (showBottomSheet) {
@@ -313,10 +355,11 @@ fun CalendarView(
     routines: List<Routine>,
     events: List<CalendarEvents>,
     petNamesMap: Map<String, String>,
+    selectedDate: LocalDate,
+    onDateSelected: (LocalDate) -> Unit,
     onEditEvent: (String) -> Unit,
     onDeleteEvent: (CalendarEvents) -> Unit
 ) {
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
     val today = remember { LocalDate.now() }
 
     val currentMonth = remember { YearMonth.now() }
@@ -399,7 +442,7 @@ fun CalendarView(
                     isSelected = selectedDate == day.date,
                     isToday = day.date == today,
                     hasItems = hasItems,
-                    onClick = {selectedDate = day.date}
+                    onClick = {onDateSelected(day.date)}
                 )
             }
         )

@@ -12,9 +12,11 @@ import java.time.ZoneId
 
 interface CalendarRepository {
     fun getEventsForDate(userId: String, date: LocalDate): Flow<List<CalendarEvents>>
+    fun getAllEventsForUser(userId: String): Flow<List<CalendarEvents>>
     fun getRoutinesForUser(userId: String): Flow<List<Routine>>
     fun getLogsForDate(date: LocalDate): Flow<List<RoutineLogs>>
     suspend fun insertEvent(event: CalendarEvents)
+    suspend fun deleteEvent(eventId: String)
     suspend fun insertRoutine(routine: Routine)
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
 }
@@ -31,6 +33,10 @@ class CalendarRepositoryImpl(
         return eventsDao.getEventsForDateRange(userId, startOfDay, endOfDay)
     }
 
+    override fun getAllEventsForUser(userId: String): Flow<List<CalendarEvents>> {
+        return eventsDao.getAllEventsForUser(userId)
+    }
+
     override fun getRoutinesForUser(userId: String): Flow<List<Routine>> {
         return routineDao.getRoutinesForUser(userId)
     }
@@ -43,6 +49,10 @@ class CalendarRepositoryImpl(
 
     override suspend fun insertEvent(event: CalendarEvents) {
         eventsDao.insertEvent(event)
+    }
+
+    override suspend fun deleteEvent(eventId: String) {
+        eventsDao.deleteEventById(eventId)
     }
 
     override suspend fun insertRoutine(routine: Routine) {

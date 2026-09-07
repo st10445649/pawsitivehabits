@@ -5,94 +5,68 @@ import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.repository.CalendarRepository
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.zahraag.pawsitivehabits.data.repository.PetRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 
 //used for UI items displayed on the calendar agenda
-sealed class CalendarAgendaItem {
-    abstract val id: String
-    abstract val title: String
-    abstract val petId: String
 
-    data class EventItem(val event: CalendarEvents) : CalendarAgendaItem() {
-        override val id: String get() = event.id
-        override val title: String get() = event.title
-        override val petId: String get() = event.petId
-    }
-
-    data class RoutineItem(
-        val routine: Routine,
-        val isCompleted: Boolean
-    ) : CalendarAgendaItem() {
-        override val id: String get() = routine.id
-        override val title: String get() = routine.title
-        override val petId: String get() = routine.petId
-    }
-}
-
-data class CalendarUiState(
+data class AgendaUiState(
     val selectedDate: LocalDate = LocalDate.now(),
-    val items: List<CalendarAgendaItem> = emptyList(),
+    val routines: List<Routine> = emptyList(),
+    val calendarEvents: List<CalendarEvents> = emptyList(),
+    val petNamesMap: Map<String, String> = emptyMap(),
     val isLoading: Boolean = false
 )
 
 class CalendarViewModel(
     private val repository: CalendarRepository,
+    private val petRepository: PetRepository,
     private val userId: String
 ) : ViewModel() {
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    val uiState: StateFlow<CalendarUiState> = _selectedDate
-        .flatMapLatest { date ->
-            combine(
-                repository.getEventsForDate(userId, date),
-                repository.getRoutinesForUser(userId),
-                repository.getLogsForDate(date)
-            ) { events, routines, logs ->
+    val uiState: StateFlow<AgendaUiState> = combine(
+        repository.getRoutinesForUser(userId),
+        repository.getAllEventsForUser(userId),
+        petRepository.getPetsByUserId(userId),
+        _selectedDate
+    ) { routines, events, pets, selectedDate ->
 
-                val agendaList = mutableListOf<CalendarAgendaItem>()
+        val petMap = pets.associate { it.id to it.name }
 
-                // Add one-time events (calendar)
-                events.forEach { agendaList.add(CalendarAgendaItem.EventItem(it)) }
-
-                // Add routines that match the day of week
-                val currentDayName = date.dayOfWeek.name
-                routines.filter { routine ->
-                    routine.repeatDays?.contains(currentDayName, ignoreCase = true) == true
-                }.forEach { routine ->
-                    val isCompleted = logs.any { it.routineId == routine.id }
-                    agendaList.add(CalendarAgendaItem.RoutineItem(routine, isCompleted))
-                }
-
-                CalendarUiState(
-                    selectedDate = date,
-                    items = agendaList,
-                    isLoading = false
-                )
-            }
-        }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = CalendarUiState(isLoading = true)
+        AgendaUiState(
+            routines = routines,
+            calendarEvents = events,
+            petNamesMap = petMap,
+            selectedDate = selectedDate,
+            isLoading = false
         )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = AgendaUiState(isLoading = true)
+    )
 
     fun onDateSelected(date: LocalDate) {
         _selectedDate.value = date
     }
 
+    fun deleteCalendarEvent(event: CalendarEvents) {
+        viewModelScope.launch {
+            repository.deleteEvent(event.id)
+        }
+    }
     fun onRoutineToggled(routineId: String, petId: String) {
         viewModelScope.launch {
             repository.toggleRoutineCompletion(routineId, petId, _selectedDate.value)
         }
     }
+
 }
