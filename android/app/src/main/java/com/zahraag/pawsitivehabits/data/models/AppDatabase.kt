@@ -11,7 +11,7 @@ import com.zahraag.pawsitivehabits.data.dao.RoutineLogsDao
 
 @Database(
     entities = [Pet::class, CalendarEvents::class, Routine::class, RoutineLogs::class],
-    version = 7,
+    version = 8,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

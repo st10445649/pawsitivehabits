@@ -1,7 +1,10 @@
 package com.zahraag.pawsitivehabits.data.remote
 
 import com.google.gson.annotations.SerializedName
+import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Pet
+import com.zahraag.pawsitivehabits.data.models.Routine
+import com.zahraag.pawsitivehabits.data.models.RoutineLogs
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -48,6 +51,35 @@ interface ApiService {
     suspend fun deletePet(
         @Path("id") petId: String
     ): Response<Unit>
+
+    @GET("calendar/{userId}")
+    suspend fun getCalendarEvents(@Path("userId") userId: String): Response<List<CalendarEvents>>
+
+    @POST("calendar")
+    suspend fun createCalendarEvent(@Body event: CalendarEvents): Response<CalendarEvents>
+
+    @DELETE("calendar/{eventId}")
+    suspend fun deleteCalendarEvent(@Path("eventId") eventId: String): Response<Unit>
+
+
+    // routines
+    @GET("routines/{userId}")
+    suspend fun getRoutines(@Path("userId") userId: String): Response<List<Routine>>
+
+    @POST("routines")
+    suspend fun createRoutine(@Body routine: Routine): Response<Routine>
+
+    @DELETE("routines/{routineId}")
+    suspend fun deleteRoutine(@Path("routineId") routineId: String): Response<Unit>
+
+
+    // routine logs
+    @GET("routines/logs/{userId}")
+    suspend fun getRoutineLogs(@Path("userId") userId: String): Response<List<RoutineLogs>>
+
+    @POST("routines/logs")
+    suspend fun logRoutineCompletion(@Body log: RoutineLogs): Response<RoutineLogs>
+
 }
 
 data class GoogleAuthRequest(

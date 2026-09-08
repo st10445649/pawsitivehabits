@@ -20,10 +20,18 @@ class OfflineSyncWorker(
 
     override suspend fun doWork(): Result {
         val database = AppDatabase.getDatabase(applicationContext)
+
+        //daos
         val petDao = database.petDao()
+        val calendarDao = database.calendarDao()
+        val routineDao = database.routineDao()
+        val routineLogsDao = database.routineLogsDao()
+
         val apiService = RetrofitClient.getApiService(applicationContext)
         val supabase = SupabaseClientProvider.client
         val bucketName = "pawsitivehabits"
+
+        val userId = inputData.getString("USER_ID") ?: ""
 
         return try {
             val unsyncedPets = petDao.getUnsyncedPets()
@@ -58,12 +66,37 @@ class OfflineSyncWorker(
                 // Sync to API
                 val response = apiService.updatePet(syncedPet.id,syncedPet)
 
+
                 if (response.isSuccessful) {
                     // Update Room DB to reflect synced state
                     petDao.insertPet(syncedPet)
                 } else {
                     Log.e("SYNC_WORKER", "API sync failed: ${response.code()} ${response.errorBody()?.string()}")
                     return Result.retry()
+                }
+            }
+            if (userId.isNotEmpty()) {
+                // Pull latest calendar events from MongoDB to Room
+                val eventsResp = apiService.getCalendarEvents(userId)
+                if (eventsResp.isSuccessful && eventsResp.body() != null) {
+                    calendarDao.syncRemoteEvents(userId, eventsResp.body()!!)
+                } else {
+                    Log.e("SYNC_WORKER", "Calendar pull failed: ${eventsResp.code()}")
+                }
+
+                // Pull latest routines from MongoDB to Room
+                val routinesResp = apiService.getRoutines(userId)
+                if (routinesResp.isSuccessful && routinesResp.body() != null) {
+                    routineDao.syncRemoteRoutines(userId, routinesResp.body()!!)
+                } else {
+                    Log.e("SYNC_WORKER", "Routines pull failed: ${routinesResp.code()}")
+                }
+
+                val logsResp = apiService.getRoutineLogs(userId)
+                if (logsResp.isSuccessful && logsResp.body() != null) {
+                    routineLogsDao.syncRemoteLogs(userId, logsResp.body()!!)
+                } else {
+                    Log.e("SYNC_WORKER", "Logs pull failed: ${logsResp.code()}")
                 }
             }
             Result.success()

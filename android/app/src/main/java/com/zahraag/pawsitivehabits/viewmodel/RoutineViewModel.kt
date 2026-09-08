@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
@@ -28,7 +29,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
     private val database = AppDatabase.getDatabase(application)
     private val apiService = RetrofitClient.getApiService(context)
     private val calendarRepository =
-        CalendarRepositoryImpl(database.calendarDao(), database.routineDao(), database.routineLogsDao())
+        CalendarRepositoryImpl(database.calendarDao(), database.routineDao(), database.routineLogsDao(), apiService, context)
     private val petRepository = PetRepository(database.petDao(), apiService, context)
 
     private val tokenManager = TokenManager(context)
@@ -57,9 +58,15 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
+            val currentUserId = tokenManager.getUserId()
+            if (currentUserId.isNullOrEmpty()) {
+                Log.e("CAL_VM", "Cannot create calendar: User ID is null or empty. Ensure user is logged in.")
+                return@launch
+            }
+
             val title = if (routineType == "Custom") customText else routineType
             val newRoutine = Routine(
-                userId = userId,
+                userId = currentUserId,
                 petId = petId,
                 title = title,
                 frequency = frequency,

@@ -203,7 +203,7 @@ rootnavController = rootnavController
             AddEditCalendarEventScreen(
                 petsMap = state.petsMap,
                 existingEvent = null,
-                currentUserId = vm.userId,
+                currentUserId = vm.tokenManager.getUserId() ?: "",
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveEvent = { event ->
                     vm.saveCalendarEvent(event) {
