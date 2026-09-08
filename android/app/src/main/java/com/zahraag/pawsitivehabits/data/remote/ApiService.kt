@@ -52,8 +52,8 @@ interface ApiService {
         @Path("id") petId: String
     ): Response<Unit>
 
-    @GET("calendar/{userId}")
-    suspend fun getCalendarEvents(@Path("userId") userId: String): Response<List<CalendarEvents>>
+    @GET("calendar")
+    suspend fun getCalendarEvents(): Response<List<CalendarEvents>>
 
     @POST("calendar")
     suspend fun createCalendarEvent(@Body event: CalendarEvents): Response<CalendarEvents>
@@ -61,10 +61,9 @@ interface ApiService {
     @DELETE("calendar/{eventId}")
     suspend fun deleteCalendarEvent(@Path("eventId") eventId: String): Response<Unit>
 
-
     // routines
-    @GET("routines/{userId}")
-    suspend fun getRoutines(@Path("userId") userId: String): Response<List<Routine>>
+    @GET("routines")
+    suspend fun getRoutines(): Response<List<Routine>>
 
     @POST("routines")
     suspend fun createRoutine(@Body routine: Routine): Response<Routine>
@@ -72,14 +71,12 @@ interface ApiService {
     @DELETE("routines/{routineId}")
     suspend fun deleteRoutine(@Path("routineId") routineId: String): Response<Unit>
 
-
     // routine logs
-    @GET("routines/logs/{userId}")
-    suspend fun getRoutineLogs(@Path("userId") userId: String): Response<List<RoutineLogs>>
+    @GET("routines/logs")
+    suspend fun getRoutineLogs(): Response<List<RoutineLogs>>
 
     @POST("routines/logs")
     suspend fun logRoutineCompletion(@Body log: RoutineLogs): Response<RoutineLogs>
-
 }
 
 data class GoogleAuthRequest(

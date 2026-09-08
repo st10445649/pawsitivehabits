@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
@@ -23,8 +24,10 @@ import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
 import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
@@ -49,6 +52,9 @@ import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.EventViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -64,8 +70,19 @@ fun AppNavigation(
 
     val currentUserId = tokenManager.getUserId() ?: ""
 
+    LaunchedEffect(Unit) {
+        if (currentUserId.isNotBlank()) {
+            triggerFullSync(context, currentUserId)
+        }
+    }
+
     LaunchedEffect(authUiState) {
         if (authUiState is AuthUiState.Success) {
+            val newUserId = tokenManager.getUserId() ?: ""
+            if (newUserId.isNotBlank()) {
+                triggerFullSync(context, newUserId)
+            }
+
             rootnavController.navigate("main") {
                 popUpTo(Screen.Login.route) { inclusive = true }
                 popUpTo(Screen.SignUp.route) { inclusive = true }
@@ -133,6 +150,12 @@ rootnavController = rootnavController
                     // Clear stored tokens and Firebase auth session
                     tokenManager.clear()
                     FirebaseAuth.getInstance().signOut()
+
+                    WorkManager.getInstance(context).cancelAllWork()
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        AppDatabase.getDatabase(context).clearAllTables()
+                    }
 
                     // Navigate to login and pop the entire backstack
                     rootnavController.navigate(Screen.Login.route) {

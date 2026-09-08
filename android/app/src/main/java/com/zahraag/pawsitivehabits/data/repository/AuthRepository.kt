@@ -1,6 +1,12 @@
 package com.zahraag.pawsitivehabits.data.repository
 
 import android.content.Context
+import androidx.work.Constraints
+import androidx.work.Data
+import androidx.work.ExistingWorkPolicy
+import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.models.User
 import com.zahraag.pawsitivehabits.data.remote.GoogleAuthRequest
@@ -8,6 +14,7 @@ import com.zahraag.pawsitivehabits.data.remote.LoginRequest
 import com.zahraag.pawsitivehabits.data.remote.RegisterRequest
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.helpers.OfflineSyncWorker
 import kotlinx.coroutines.tasks.await
 
 object AuthRepository {
@@ -123,6 +130,27 @@ object AuthRepository {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    fun triggerFullSync(context: Context, userId: String) {
+        val inputData = Data.Builder()
+            .putString("USER_ID", userId)
+            .build()
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val syncWorkRequest = OneTimeWorkRequestBuilder<OfflineSyncWorker>()
+            .setConstraints(constraints)
+            .setInputData(inputData)
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "FullDeviceSyncWorker",
+            ExistingWorkPolicy.REPLACE,
+            syncWorkRequest
+        )
     }
 }
 

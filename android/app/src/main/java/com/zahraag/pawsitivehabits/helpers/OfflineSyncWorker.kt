@@ -76,8 +76,17 @@ class OfflineSyncWorker(
                 }
             }
             if (userId.isNotEmpty()) {
+
+                val petsResp = apiService.getPets()
+                if (petsResp.isSuccessful) {
+                    petsResp.body()?.data?.pets?.let { remotePets ->
+                        val syncedPets = remotePets.map { it.copy(userId = userId, isSynced = true) }
+                        petDao.insertPets(syncedPets)
+                    }
+                }
+
                 // Pull latest calendar events from MongoDB to Room
-                val eventsResp = apiService.getCalendarEvents(userId)
+                val eventsResp = apiService.getCalendarEvents()
                 if (eventsResp.isSuccessful && eventsResp.body() != null) {
                     calendarDao.syncRemoteEvents(userId, eventsResp.body()!!)
                 } else {
@@ -85,14 +94,14 @@ class OfflineSyncWorker(
                 }
 
                 // Pull latest routines from MongoDB to Room
-                val routinesResp = apiService.getRoutines(userId)
+                val routinesResp = apiService.getRoutines()
                 if (routinesResp.isSuccessful && routinesResp.body() != null) {
                     routineDao.syncRemoteRoutines(userId, routinesResp.body()!!)
                 } else {
                     Log.e("SYNC_WORKER", "Routines pull failed: ${routinesResp.code()}")
                 }
 
-                val logsResp = apiService.getRoutineLogs(userId)
+                val logsResp = apiService.getRoutineLogs()
                 if (logsResp.isSuccessful && logsResp.body() != null) {
                     routineLogsDao.syncRemoteLogs(userId, logsResp.body()!!)
                 } else {

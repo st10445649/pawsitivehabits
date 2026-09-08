@@ -61,19 +61,19 @@ class CalendarRepositoryImpl(
 
      suspend fun syncCalendarData(userId: String) {
         try {
-            val eventsResp = apiService.getCalendarEvents(userId)
+            val eventsResp = apiService.getCalendarEvents()
             if (eventsResp.isSuccessful && eventsResp.body() != null) {
                 val syncedEvents = eventsResp.body()!!.map { it.copy(isSynced = true) }
                 eventsDao.syncRemoteEvents(userId, syncedEvents)
             }
 
-            val routinesResp = apiService.getRoutines(userId)
+            val routinesResp = apiService.getRoutines()
             if (routinesResp.isSuccessful && routinesResp.body() != null) {
                 val syncedRoutines = routinesResp.body()!!.map { it.copy(isSynced = true) }
                 routineDao.syncRemoteRoutines(userId, syncedRoutines)
             }
 
-            val logsResp = apiService.getRoutineLogs(userId)
+            val logsResp = apiService.getRoutineLogs()
             if (logsResp.isSuccessful && logsResp.body() != null) {
                 logsDao.syncRemoteLogs(userId,logsResp.body()!!)
             }
