@@ -63,12 +63,14 @@ class CalendarRepositoryImpl(
         try {
             val eventsResp = apiService.getCalendarEvents(userId)
             if (eventsResp.isSuccessful && eventsResp.body() != null) {
-                eventsDao.syncRemoteEvents(userId, eventsResp.body()!!)
+                val syncedEvents = eventsResp.body()!!.map { it.copy(isSynced = true) }
+                eventsDao.syncRemoteEvents(userId, syncedEvents)
             }
 
             val routinesResp = apiService.getRoutines(userId)
             if (routinesResp.isSuccessful && routinesResp.body() != null) {
-                routineDao.syncRemoteRoutines(userId, routinesResp.body()!!)
+                val syncedRoutines = routinesResp.body()!!.map { it.copy(isSynced = true) }
+                routineDao.syncRemoteRoutines(userId, syncedRoutines)
             }
 
             val logsResp = apiService.getRoutineLogs(userId)
@@ -81,10 +83,16 @@ class CalendarRepositoryImpl(
     }
 
     override suspend fun insertEvent(event: CalendarEvents) {
-        eventsDao.insertEvent(event)
+        val localEvent = event.copy(isSynced = false)
+        eventsDao.insertEvent(localEvent)
         try {
-            val response = apiService.createCalendarEvent(event)
-            if (!response.isSuccessful) scheduleSyncWorker(event.userId)
+            val response = apiService.createCalendarEvent(localEvent)
+            if (!response.isSuccessful&& response.body() != null) {
+                val remoteEvent = response.body()!!
+                eventsDao.insertEvent(remoteEvent.copy(isSynced = true))
+            } else {
+                scheduleSyncWorker(event.userId)
+            }
 
         } catch (e: Exception) {
             Log.e("API_ERR", "Failed to sync insertEvent, enqueueing worker: ${e.message}")
@@ -104,10 +112,16 @@ class CalendarRepositoryImpl(
     }
 
     override suspend fun insertRoutine(routine: Routine) {
-        routineDao.insertRoutine(routine)
+        val localRoutine = routine.copy(isSynced = false)
+        routineDao.insertRoutine(localRoutine)
         try {
-            val response = apiService.createRoutine(routine)
-            if (!response.isSuccessful) scheduleSyncWorker(routine.userId)
+            val response = apiService.createRoutine(localRoutine)
+            if (response.isSuccessful && response.body() != null) {
+                val remoteRoutine = response.body()!!
+                routineDao.insertRoutine(remoteRoutine.copy(isSynced = true))
+            } else {
+                scheduleSyncWorker(routine.userId)
+            }
         } catch (e: Exception) {
             Log.e("API_ERR", "Failed to sync insertRoutine, enqueueing worker: ${e.message}")
             scheduleSyncWorker(routine.userId)
