@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "485813706421",
+    "project_id": "pawsitivehabits-b3c2b",
+    "storage_bucket": "pawsitivehabits-b3c2b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:485813706421:android:bed20e5954441c02cee8fc",
+        "android_client_info": {
+          "package_name": "com.zahraag.pawsitivehabits"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "485813706421-tojs7o22lor565chhuq3giact43joqui.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zahraag.pawsitivehabits",
+            "certificate_hash": "e5974ac387235dbc576efb735b868a929aedbf9b"
+          }
+        },
+        {
+          "client_id": "485813706421-6k488ggq07ikacktpi1abn8csjpne8mu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBYH0jwZ4L6LCAdtGfjQ0Ot9ZGY6-zV9bU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "485813706421-6k488ggq07ikacktpi1abn8csjpne8mu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
