@@ -413,6 +413,9 @@ rootnavController = rootnavController
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveWeight = { newWeight ->
                     weightViewModel.saveWeight(newWeight)
+                },
+                onDeleteWeight = { weight ->
+                    weightViewModel.deleteWeight(weight.id)
                 }
             )
         }
