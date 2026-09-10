@@ -41,6 +41,9 @@ interface RoutineDao {
     @Query("SELECT * FROM routine_table WHERE userId = :userId")
     fun getRoutinesForUser(userId: String): Flow<List<Routine>>
 
+    @Query("SELECT id FROM routine_table WHERE userId = :userId")
+    suspend fun getRoutineIdsForUser(userId: String): List<String>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertRoutine(routine: Routine): Long
 

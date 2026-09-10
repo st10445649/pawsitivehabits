@@ -175,6 +175,64 @@ class CalendarRepositoryImpl(
         }
     }
 
+    suspend fun fetchRemoteRoutines(userId: String) {
+        try {
+            val response = apiService.getRoutines()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteRoutines ->
+                    val syncedRoutines = remoteRoutines.map { routine ->
+                        routine.copy(
+                            userId = if (routine.userId.isBlank()) userId else routine.userId,
+                            isSynced = true
+                        )
+                    }
+                    routineDao.insertRoutines(syncedRoutines)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("ROUTINE_REPO", "Failed to fetch remote routines: ${e.message}")
+        }
+    }
+
+    suspend fun fetchRemoteCalendarEvents(userId: String) {
+        try {
+            val response = apiService.getCalendarEvents()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteEvents ->
+                    val syncedEvents = remoteEvents.map { event ->
+                        event.copy(
+                            userId = if (event.userId.isBlank()) userId else event.userId,
+                            isSynced = true
+                        )
+                    }
+                    eventsDao.insertEvents(syncedEvents)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("CALENDAR_REPO", "Failed to fetch remote calendar events: ${e.message}")
+        }
+    }
+
+    suspend fun fetchRemoteRoutineLogs(userId: String) {
+        try {
+            val userRoutineIds = routineDao.getRoutineIdsForUser(userId).toSet()
+
+            val response = apiService.getRoutineLogs()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteLogs ->
+                    val syncedLogs = remoteLogs
+
+                        .filter { log -> userRoutineIds.contains(log.routineId) }
+                        .map { log -> log.copy(isSynced = true) }
+
+                    logsDao.insertLogs(syncedLogs)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("LOGS_REPO", "Failed to fetch remote routine logs: ${e.message}")
+        }
+    }
+
     private fun scheduleSyncWorker(userId: String = "") {
         val inputData = Data.Builder()
             .putString("USER_ID", userId)
