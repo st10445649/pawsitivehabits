@@ -24,7 +24,7 @@ app.listen(PORT, ()=>
 }catch(error){
 
     //if mongodb can't be reached
-    console.error("ParkSmart should not start.")
+    console.error("Pawsitive Habits should not start.")
 
     console.error(error.message);
 
