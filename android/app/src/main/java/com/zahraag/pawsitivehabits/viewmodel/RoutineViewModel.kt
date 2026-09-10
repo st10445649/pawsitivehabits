@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.ZoneId
 
 data class AddRoutineUiState(
     val petsMap: Map<String, String> = emptyMap(),
@@ -46,35 +47,55 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = AddRoutineUiState(isLoading = true)
         )
-
-    fun createRoutine(
+    fun createOrUpdateRoutine(
+        routineToEdit: Routine? = null,
         petId: String,
         routineType: String,
         customText: String,
         frequency: String,
         days: Set<String>,
         startDate: LocalDate,
-        showInCalendar: Boolean,
+        endDate: LocalDate,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
             val currentUserId = tokenManager.getUserId()
             if (currentUserId.isNullOrEmpty()) {
-                Log.e("CAL_VM", "Cannot create calendar: User ID is null or empty. Ensure user is logged in.")
+                Log.e("CAL_VM", "Cannot create/update routine: User ID is null or empty.")
                 return@launch
             }
 
             val title = if (routineType == "Custom") customText else routineType
-            val newRoutine = Routine(
+            val startDateMillis = startDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val endDateMillis = endDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+            val repeatDaysString = days.joinToString(",")
+
+            val routineToSave = routineToEdit?.copy(
+                petId = petId,
+                title = title,
+                frequency = frequency,
+                startDate = startDateMillis,
+                endDate = endDateMillis,
+                repeatDays = repeatDaysString
+            ) ?: Routine(
                 userId = currentUserId,
                 petId = petId,
                 title = title,
                 frequency = frequency,
-                startDate = startDate.toEpochMilli(),
-                repeatDays = days.joinToString(",")
+                startDate = startDateMillis,
+                endDate = endDateMillis,
+                repeatDays = repeatDaysString
             )
-            calendarRepository.insertRoutine(newRoutine)
+
+            if (routineToEdit != null) {
+                calendarRepository.updateRoutine(routineToSave)
+            } else {
+                calendarRepository.insertRoutine(routineToSave)
+            }
+
             onSuccess()
         }
     }
+
+
 }

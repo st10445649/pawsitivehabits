@@ -123,4 +123,13 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
             calendarRepository.toggleRoutineCompletion(routineId, petId, _selectedDate.value)
         }
     }
+
+    fun deleteRoutine(routine: Routine) {
+        viewModelScope.launch {
+            Log.d("Routine_VM", "Deleting routine ID: ${routine.id}")
+            calendarRepository.deleteRoutine(
+                routine.id
+            )
+        }
+    }
 }

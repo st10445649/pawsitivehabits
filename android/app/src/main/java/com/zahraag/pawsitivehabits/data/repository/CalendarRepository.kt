@@ -28,6 +28,8 @@ interface CalendarRepository {
     suspend fun insertEvent(event: CalendarEvents)
     suspend fun deleteEvent(eventId: String)
     suspend fun insertRoutine(routine: Routine)
+    suspend fun updateRoutine(routine: Routine)
+    suspend fun deleteRoutine(routineId: String)
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
 }
 
@@ -125,6 +127,34 @@ class CalendarRepositoryImpl(
         } catch (e: Exception) {
             Log.e("API_ERR", "Failed to sync insertRoutine, enqueueing worker: ${e.message}")
             scheduleSyncWorker(routine.userId)
+        }
+    }
+
+    override suspend fun updateRoutine(routine: Routine) {
+        val localRoutine = routine.copy(isSynced = false)
+        routineDao.insertRoutine(localRoutine)
+        try {
+            val response = apiService.createRoutine(localRoutine)
+            if (response.isSuccessful && response.body() != null) {
+                val remoteRoutine = response.body()!!
+                routineDao.insertRoutine(remoteRoutine.copy(isSynced = true))
+            } else {
+                scheduleSyncWorker(routine.userId)
+            }
+        } catch (e: Exception) {
+            Log.e("API_ERR", "Failed to sync updateRoutine, enqueueing worker: ${e.message}")
+            scheduleSyncWorker(routine.userId)
+        }
+    }
+
+    override suspend fun deleteRoutine(routineId: String) {
+        routineDao.deleteRoutineById(routineId)
+        try {
+            val response = apiService.deleteRoutine(routineId)
+            if (!response.isSuccessful) scheduleSyncWorker()
+        } catch (e: Exception) {
+            Log.e("API_ERR", "Failed to sync deleteRoutine, enqueueing worker: ${e.message}")
+            scheduleSyncWorker()
         }
     }
 
