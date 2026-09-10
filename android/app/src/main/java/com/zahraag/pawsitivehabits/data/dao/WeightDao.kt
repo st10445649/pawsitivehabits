@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.data.models.Weight
@@ -20,7 +21,17 @@ interface WeightDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertWeight(weight: Weight)
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertWeights(weights: List<Weight>)
+    @Query("DELETE FROM weight_table WHERE userId = :userId AND isSynced = 1")
+    suspend fun deleteSyncedWeightsForUser(userId: String)
 
     @Query("DELETE FROM weight_table WHERE id = :weightId")
     suspend fun deleteWeightById(weightId: String)
+
+    @Transaction
+    suspend fun syncRemoteWeights(userId: String, remoteWeights: List<Weight>) {
+        deleteSyncedWeightsForUser(userId)
+        insertWeights(remoteWeights)
+    }
 }
