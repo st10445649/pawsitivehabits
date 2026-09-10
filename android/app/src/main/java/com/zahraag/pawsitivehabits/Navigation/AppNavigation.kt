@@ -28,6 +28,7 @@ import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.UserSettings
+import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
@@ -53,6 +54,7 @@ import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import com.zahraag.pawsitivehabits.viewmodel.WeightViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -394,12 +396,25 @@ rootnavController = rootnavController
         }
 
         composable(Screen.Weight.route) {
+            val weightViewModel: WeightViewModel = viewModel()
+            val petViewModel: PetViewModel = viewModel()
+
+            val weightList by weightViewModel.weightList.collectAsState()
+
+            val userPets by petViewModel.localUserPets.collectAsState()
+            val petsMap = remember(userPets) {
+                userPets.associate { pet -> pet.id to pet.name }
+            }
+
             WeightScreen(
-                petsMap = samplePetNamesMap,
-                weightList = sampleWeightRecords,
-                currentUserId = "user123",
+                petsMap = petsMap,
+                weightList = weightList,
+                currentUserId = weightViewModel.userId,
                 onNavigateBack = { rootnavController.popBackStack() },
-            ) { }
+                onSaveWeight = { newWeight ->
+                    weightViewModel.saveWeight(newWeight)
+                }
+            )
         }
 
         composable(Screen.Expenses.route) {

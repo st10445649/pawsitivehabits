@@ -75,8 +75,8 @@ import kotlin.collections.filter
 
 @Composable
 fun WeightScreen(
-    petsMap: Map<String, String> = mapOf("pet1" to "Cat", "pet2" to "Dog"),
-    weightList: List<Weight> = emptyList(),
+    petsMap: Map<String, String>,
+    weightList: List<Weight>,
     currentUserId: String = "user123",
     onNavigateBack: () -> Unit,
     onSaveWeight: (Weight) -> Unit

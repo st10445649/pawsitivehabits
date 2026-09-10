@@ -17,6 +17,6 @@ data class Weight(
     var unit: String,
     var date: Long,
 
-    @Transient
+    @kotlinx.serialization.Transient
     var isSynced: Boolean = false
 )

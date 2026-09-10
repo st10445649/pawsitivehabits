@@ -20,9 +20,9 @@ interface WeightDao {
     fun getWeightsForPet(petId: String): Flow<List<Weight>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWeight(weight: Weight)
+    suspend fun insertWeight(weight: Weight):Long
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertWeights(weights: List<Weight>)
+    suspend fun insertWeights(weights: List<Weight>):List<Long>
     @Query("DELETE FROM weight_table WHERE userId = :userId AND isSynced = 1")
     suspend fun deleteSyncedWeightsForUser(userId: String)
 
