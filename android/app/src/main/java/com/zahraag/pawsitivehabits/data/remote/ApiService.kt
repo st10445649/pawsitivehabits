@@ -5,6 +5,7 @@ import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.RoutineLogs
+import com.zahraag.pawsitivehabits.data.models.Weight
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -77,6 +78,23 @@ interface ApiService {
 
     @POST("routines/logs")
     suspend fun logRoutineCompletion(@Body log: RoutineLogs): Response<RoutineLogs>
+
+
+    // weight operations
+    @GET("weights")
+    suspend fun getWeights(): Response<List<Weight>>
+
+    @GET("weights/pet/{petId}")
+    suspend fun getWeightsByPet(@Path("petId") petId: String): Response<List<Weight>>
+
+    @POST("weights")
+    suspend fun createWeight(@Body weight: Weight): Response<Weight>
+
+    @PUT("weights/{id}")
+    suspend fun updateWeight(@Path("id") weightId: String, @Body weight: Weight): Response<Weight>
+
+    @DELETE("weights/{id}")
+    suspend fun deleteWeight(@Path("id") weightId: String): Response<Unit>
 }
 
 data class GoogleAuthRequest(
