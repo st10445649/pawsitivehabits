@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.R.attr.enabled
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -32,12 +34,14 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -50,9 +54,9 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -70,7 +74,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.kizitonwose.calendar.compose.HorizontalCalendar
 import com.kizitonwose.calendar.compose.rememberCalendarState
 import com.kizitonwose.calendar.core.CalendarDay
@@ -79,7 +82,6 @@ import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
 import com.zahraag.pawsitivehabits.data.models.AgendaDisplayItem
 import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Routine
-import com.zahraag.pawsitivehabits.toEpochMilli
 import com.zahraag.pawsitivehabits.toFormattedTime
 import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
@@ -97,11 +99,9 @@ import java.time.format.TextStyle
 import com.zahraag.pawsitivehabits.R
 import com.zahraag.pawsitivehabits.data.models.CategoryOption
 import com.zahraag.pawsitivehabits.data.models.RoutineTypeOption
-import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
-import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
-import com.zahraag.pawsitivehabits.viewmodel.EventViewModel
-import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import java.time.Instant
+import java.time.ZoneId
 import java.util.Locale.getDefault
 
 
@@ -116,8 +116,10 @@ fun AgendaScreen(
     onDateSelected: (LocalDate) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAddRoutine: () -> Unit,
+    onNavigateToEditRoutine: (Routine) -> Unit,
+    onDeleteRoutine: (Routine) -> Unit,
     onNavigateToAddCalendarEvent: () -> Unit,
-    onNavigateToEditCalendarEvent: (String) -> Unit,
+    onNavigateToEditCalendarEvent: (CalendarEvents) -> Unit,
     onDeleteCalendarEvent: (CalendarEvents) -> Unit
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
@@ -184,11 +186,21 @@ fun AgendaScreen(
                     petNamesMap = petNamesMap,
                     selectedDate = selectedDate,
                     onDateSelected = onDateSelected,
-                    onEditEvent = onNavigateToEditCalendarEvent,
-                    onDeleteEvent = onDeleteCalendarEvent
+                    onEditEvent = { event -> onNavigateToEditCalendarEvent(event) },
+                    onDeleteEvent = { event -> onDeleteCalendarEvent(event) },
+                    onEditRoutine = { routine -> onNavigateToEditRoutine(routine) },
+                    onDeleteRoutine = { routine -> onDeleteRoutine(routine) },
                 )
             }else {
-                RoutinesListView(routines = routinesList,petNamesMap = petNamesMap)
+                RoutinesListView(
+                    routines = routinesList,
+                    petNamesMap = petNamesMap,
+                    onRoutineClick = { routine ->
+                        onNavigateToEditRoutine(routine)
+                    },
+                    onEditRoutine = { routine -> onNavigateToEditRoutine(routine) },
+                    onDeleteRoutine = { routine -> onDeleteRoutine(routine) },
+                )
             }
         }
         FloatingActionButton(
@@ -326,8 +338,10 @@ fun CalendarView(
     petNamesMap: Map<String, String>,
     selectedDate: LocalDate,
     onDateSelected: (LocalDate) -> Unit,
-    onEditEvent: (String) -> Unit,
-    onDeleteEvent: (CalendarEvents) -> Unit
+    onEditEvent: (CalendarEvents) -> Unit,
+    onDeleteEvent: (CalendarEvents) -> Unit,
+    onEditRoutine: (Routine) -> Unit,
+    onDeleteRoutine: (Routine) -> Unit
 ) {
     val today = remember { LocalDate.now() }
 
@@ -453,7 +467,10 @@ fun CalendarView(
                                 timeStr = item.routine.time.toFormattedTime(),
                                 badgeText = "Routine",
                                 badgeColor = MintDarkGreen,
-                                iconRes = getRoutineIconRes(item.routine.title)
+                                iconRes = getRoutineIconRes(item.routine.title),
+                                onClick = {onEditRoutine(item.routine)},
+                                onEditClick = { onEditRoutine(item.routine) },
+                                onDeleteClick = { onDeleteRoutine(item.routine) }
                             )
                         }
                         is AgendaDisplayItem.EventItem -> {
@@ -465,7 +482,8 @@ fun CalendarView(
                                 badgeText = item.event.category,
                                 badgeColor = Color(0xFFFC8369),
                                 iconRes = R.drawable.calendarnav,
-                                onEditClick = { onEditEvent(item.event.id) },
+                                onClick = {onEditEvent(item.event)},
+                                onEditClick = { onEditEvent(item.event) },
                                 onDeleteClick = { onDeleteEvent(item.event) }
                             )
                         }
@@ -566,6 +584,7 @@ fun AgendaCard(
     badgeText: String,
     badgeColor: Color,
     iconRes: Int,
+    onClick: (() -> Unit)? = null,
     onEditClick: (() -> Unit)? = null,
     onDeleteClick: (() -> Unit)? = null
 ) {
@@ -576,6 +595,8 @@ fun AgendaCard(
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         modifier = Modifier.fillMaxWidth()
+        .clickable(enabled = onClick != null) { onClick?.invoke() }
+
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -631,21 +652,21 @@ fun AgendaCard(
                         onDismissRequest = { showMenu = false },
                         modifier = Modifier.background(SurfaceWhite)
                     ) {
-                        onEditClick?.let {
+                        onEditClick?.let {edit ->
                             DropdownMenuItem(
                                 text = { Text("Edit", color = TextDark) },
                                 onClick = {
                                     showMenu = false
-                                    it()
+                                    edit()
                                 }
                             )
                         }
-                        onDeleteClick?.let {
+                        onDeleteClick?.let { delete->
                             DropdownMenuItem(
                                 text = { Text("Delete", color = Color.Red) },
                                 onClick = {
                                     showMenu = false
-                                    it()
+                                    delete()
                                 }
                             )
                         }
@@ -666,12 +687,23 @@ fun AddEditCalendarEventScreen(
     onNavigateBack: () -> Unit,
     onSaveEvent: (CalendarEvents) -> Unit
 ) {
-    var date by remember { mutableStateOf(existingEvent?.date?.toLocalDate() ?: LocalDate.now()) }
-    var title by remember { mutableStateOf(existingEvent?.title ?: "") }
-    var category by remember { mutableStateOf(existingEvent?.category ?: "Medical") }
-    var notes by remember { mutableStateOf(existingEvent?.notes ?: "") }
-    var selectedPetId by remember { mutableStateOf(existingEvent?.petId ?: petsMap.keys.firstOrNull() ?: "") }
+    var selectedPetId by remember(existingEvent, petsMap) {
+        mutableStateOf(existingEvent?.petId ?: petsMap.keys.firstOrNull() ?: "")
+    }
+    val initialDate = existingEvent?.date?.let {
+        Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+    } ?: LocalDate.now()
+
+    var selectedLocalDate by remember(initialDate) { mutableStateOf(initialDate) }
+
+    var title by remember(existingEvent) { mutableStateOf(existingEvent?.title ?: "") }
+    var category by remember(existingEvent) { mutableStateOf(existingEvent?.category ?: "Medical") }
+    var notes by remember(existingEvent) { mutableStateOf(existingEvent?.notes ?: "") }
+    var reminderMinutes by remember(existingEvent) { mutableIntStateOf(existingEvent?.reminderMinutes ?: 30) }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
+    var isReminderDropdownExpanded by remember { mutableStateOf(false) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     val categories = remember {
@@ -682,6 +714,42 @@ fun AddEditCalendarEventScreen(
             CategoryOption("Playdate", R.drawable.greenpaws),
             CategoryOption("Other", R.drawable.customroutine)
         )
+    }
+
+    val reminderOptions = remember {
+        listOf(
+            0 to "At time of event",
+            15 to "15 minutes before",
+            30 to "30 minutes before",
+            60 to "1 hour before",
+            1440 to "1 day before"
+        )
+    }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = selectedLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        selectedLocalDate = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
+                    }
+                    showDatePicker = false
+                }) {
+                    Text("OK", color = MintDarkGreen)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = MintDarkGreen)
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
     }
     Box(
         modifier = Modifier
@@ -855,6 +923,7 @@ fun AddEditCalendarEventScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface),
                 modifier = Modifier.fillMaxWidth()
+                    .clickable{showDatePicker = true}
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -862,7 +931,7 @@ fun AddEditCalendarEventScreen(
                 ) {
                     Column {
                         Text("Date", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
-                        Text(date.format(dateFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+                        Text(selectedLocalDate.format(dateFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
                     }
                     Spacer(modifier = Modifier.weight(1f))
                     Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
@@ -870,6 +939,50 @@ fun AddEditCalendarEventScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Reminder Dropdown
+            Text("Reminder", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(8.dp))
+            Box {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { isReminderDropdownExpanded = true }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Notifications, contentDescription = null, tint = MintDarkGreen)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = reminderOptions.find { it.first == reminderMinutes }?.second ?: "$reminderMinutes minutes before",
+                            fontWeight = FontWeight.Medium,
+                            color = TextDark
+                        )
+                        Spacer(modifier = Modifier.weight(1f))
+                        Icon(Icons.Default.KeyboardArrowDown, contentDescription = null, tint = MintDarkGreen)
+                    }
+                }
+
+                DropdownMenu(
+                    expanded = isReminderDropdownExpanded,
+                    onDismissRequest = { isReminderDropdownExpanded = false },
+                    modifier = Modifier.background(SurfaceWhite)
+                ) {
+                    reminderOptions.forEach { (mins, label) ->
+                        DropdownMenuItem(
+                            text = { Text(label, color = TextDark) },
+                            onClick = {
+                                reminderMinutes = mins
+                                isReminderDropdownExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             // Notes Input Field
             Text("Notes", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
@@ -900,18 +1013,25 @@ fun AddEditCalendarEventScreen(
             // Save Button
             Button(
                 onClick = {
+                    val dateEpochMillis = selectedLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    val nowMillis = System.currentTimeMillis()
                     val eventToSave = existingEvent?.copy(
                         title = title,
                         category = category,
+                        date = dateEpochMillis,
+                        time = existingEvent.time ?: nowMillis,
                         notes = notes,
-                        petId = selectedPetId
+                        petId = selectedPetId,
+                        reminderMinutes = reminderMinutes
                     ) ?: CalendarEvents(
                         userId = currentUserId,
                         petId = selectedPetId,
                         title = title,
                         category = category,
-                        time = System.currentTimeMillis(),
-                        notes = notes
+                        date = dateEpochMillis,
+                        time = nowMillis,
+                        notes = notes,
+                        reminderMinutes = reminderMinutes
                     )
                     onSaveEvent(eventToSave)
                 },
@@ -933,15 +1053,30 @@ fun AddEditCalendarEventScreen(
 @Composable
 fun RoutinesListView(
     routines: List<Routine>,
-    petNamesMap: Map<String, String>
+    petNamesMap: Map<String, String>,
+    onRoutineClick: (Routine) -> Unit,
+    onEditRoutine: (Routine) -> Unit,
+    onDeleteRoutine: (Routine) -> Unit
 ) {
     if (routines.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No Routines Created Yet", color = MintDarkGreen.copy(alpha = 0.6f))
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No Routines Created Yet",
+                color = MintDarkGreen.copy(alpha = 0.6f)
+            )
         }
     } else {
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(routines) { routine ->
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(bottom = 16.dp)
+        ) {
+            items(
+                items = routines,
+                key = { routine -> routine.id }
+            ) { routine ->
                 val petName = petNamesMap[routine.petId] ?: "Pet"
                 AgendaCard(
                     title = routine.title,
@@ -949,7 +1084,10 @@ fun RoutinesListView(
                     timeStr = "${routine.frequency} • ${routine.time.toFormattedTime()}",
                     badgeText = "Routine",
                     badgeColor = MintDarkGreen,
-                    iconRes = getRoutineIconRes(routine.title)
+                    iconRes = getRoutineIconRes(routine.title),
+                    onClick = { onEditRoutine(routine) },
+                    onEditClick = { onEditRoutine(routine) },
+                    onDeleteClick = { onDeleteRoutine(routine) }
                 )
             }
         }
@@ -986,30 +1124,23 @@ fun AgendaTabButton(
 @Composable
 fun AddRoutineScreen(
     petsMap: Map<String, String>,
+    routineToEdit: Routine? = null,
     onNavigateBack: () -> Unit,
     onSaveRoutine: (
         petId: String,
         routineType: String,
         customText: String,
         frequency: String,
-        days: Set<String>,
+        repeatDays: Set<String>,
         startDate: LocalDate,
-        showInCalendar: Boolean
+        endDate: LocalDate
     ) -> Unit
 ){
-    var selectedPetId by remember(petsMap) { mutableStateOf(petsMap.keys.firstOrNull() ?: "") }
+
+    var selectedPetId by remember(routineToEdit, petsMap) {
+        mutableStateOf(routineToEdit?.petId ?: petsMap.keys.firstOrNull() ?: "")
+    }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
-
-    var selectedRoutineType by remember { mutableStateOf("Bath") }
-    var customRoutineText by remember { mutableStateOf("") }
-
-    var selectedFrequency by remember { mutableStateOf("Weekly") }
-    var selectedDays by remember { mutableStateOf(setOf("Wed")) }
-
-    var startDate by remember { mutableStateOf(LocalDate.now()) }
-    var showInCalendar by remember { mutableStateOf(true) }
-
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     val routineTypes = remember {
         listOf(
@@ -1021,6 +1152,45 @@ fun AddRoutineScreen(
             RoutineTypeOption("Custom", R.drawable.customroutine)
         )
     }
+    val initialType = remember(routineToEdit) {
+        val existingTitle = routineToEdit?.title
+        if (existingTitle != null && routineTypes.none { it.name == existingTitle }) "Custom" else (existingTitle ?: "Bath")
+    }
+    var selectedRoutineType by remember(routineToEdit) { mutableStateOf(initialType) }
+    var customRoutineText by remember(routineToEdit) {
+        mutableStateOf(if (initialType == "Custom") routineToEdit?.title ?: "" else "")
+    }
+
+    var selectedFrequency by remember(routineToEdit) {
+        mutableStateOf(routineToEdit?.frequency ?: "Weekly")
+    }
+
+    var selectedDays by remember(routineToEdit) {
+        mutableStateOf(
+            routineToEdit?.repeatDays?.split(",")?.filter { it.isNotBlank() }?.toSet() ?: setOf("Wed")
+        )
+    }
+
+    var startDate by remember(routineToEdit) {
+        mutableStateOf(
+            routineToEdit?.startDate?.let {
+                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+            } ?: LocalDate.now()
+        )
+    }
+
+    var endDate by remember(routineToEdit) {
+        mutableStateOf(
+            routineToEdit?.endDate?.let {
+                Instant.ofEpochMilli(it).atZone(ZoneId.systemDefault()).toLocalDate()
+            } ?: LocalDate.now()
+        )
+    }
+    var showStartDatePicker by remember { mutableStateOf(false) }
+    var showEndDatePicker by remember { mutableStateOf(false) }
+
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+
     val daysList = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
     Box(
         modifier = Modifier
@@ -1040,7 +1210,7 @@ fun AddRoutineScreen(
                         modifier = Modifier.size(50.dp))
                 }
                 Spacer(modifier = Modifier.weight(1f))
-                Text("New Routine", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MintDarkGreen)
+                Text(text = if (routineToEdit == null) "New Routine" else "Edit Routine", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MintDarkGreen)
                 Spacer(modifier = Modifier.weight(1.3f))
             }
 
@@ -1200,12 +1370,113 @@ fun AddRoutineScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (showStartDatePicker) {
+
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = startDate
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = {
+                        showStartDatePicker = false
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    startDate = Instant
+                                        .ofEpochMilli(millis)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+
+                                    if (endDate.isBefore(startDate)) {
+                                        endDate = startDate
+                                    }
+                                }
+
+                                showStartDatePicker = false
+                            }
+                        ) {
+                            Text("OK", color = MintDarkGreen)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showStartDatePicker = false
+                            }
+                        ) {
+                            Text("Cancel", color = MintDarkGreen)
+                        }
+                    }
+                ) {
+                    DatePicker(
+                        state = datePickerState
+                    )
+                }
+            }
+
+            if (showEndDatePicker) {
+
+                val datePickerState = rememberDatePickerState(
+                    initialSelectedDateMillis = endDate
+                        .atStartOfDay(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
+                )
+
+                DatePickerDialog(
+                    onDismissRequest = {
+                        showEndDatePicker = false
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                datePickerState.selectedDateMillis?.let { millis ->
+                                    val selectedEndDate = Instant
+                                        .ofEpochMilli(millis)
+                                        .atZone(ZoneId.systemDefault())
+                                        .toLocalDate()
+
+                                    if (!selectedEndDate.isBefore(startDate)) {
+                                        endDate = selectedEndDate
+                                    }
+                                }
+
+                                showEndDatePicker = false
+                            }
+                        ) {
+                            Text("OK", color = MintDarkGreen)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = {
+                                showEndDatePicker = false
+                            }
+                        ) {
+                            Text("Cancel", color = MintDarkGreen)
+                        }
+                    }
+                ) {
+                    DatePicker(
+                        state = datePickerState
+                    )
+                }
+            }
+
             Text("Start Date", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(10.dp))
             Card(
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface),
                 modifier = Modifier.fillMaxWidth()
+                    .clickable {
+                        showStartDatePicker = true
+                    }
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -1222,30 +1493,30 @@ fun AddRoutineScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Switches & Details Card
+            Text("End Date", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(10.dp))
             Card(
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface),
                 modifier = Modifier.fillMaxWidth()
+                    .clickable {
+                        showEndDatePicker = true
+                    }
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("Show in Calendar", fontWeight = FontWeight.Bold, color = TextDark)
-                        Text("Display this routine as an event", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
+                    Column {
+                        Text("Date", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
+                        Text(endDate.format(dateFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
                     }
-                    Switch(
-                        checked = showInCalendar,
-                        onCheckedChange = { showInCalendar = it },
-                        colors = SwitchDefaults.colors(checkedThumbColor = SurfaceWhite, checkedTrackColor = MintDarkGreen,
-                            uncheckedThumbColor = SurfaceWhite, uncheckedIconColor = MintBackground, uncheckedBorderColor = MintDarkGreen)
-                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
                 }
             }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
 
             Button(
@@ -1258,7 +1529,7 @@ fun AddRoutineScreen(
                         selectedFrequency,
                         selectedDays,
                         startDate,
-                        showInCalendar
+                        endDate
                     )
                 },
                 shape = RoundedCornerShape(20.dp),
@@ -1267,7 +1538,9 @@ fun AddRoutineScreen(
                     .fillMaxWidth()
                     .height(54.dp)
             ) {
-                Text("CREATE ROUTINE", fontWeight = FontWeight.Bold, color = SurfaceWhite)
+                Text(
+                    text = if (routineToEdit != null) "SAVE CHANGES" else "CREATE ROUTINE",
+                    fontWeight = FontWeight.Bold, color = SurfaceWhite)
             }
         }
     }

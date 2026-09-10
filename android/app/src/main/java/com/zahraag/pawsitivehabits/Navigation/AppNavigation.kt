@@ -25,6 +25,8 @@ import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
 import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
+import com.zahraag.pawsitivehabits.data.models.CalendarEvents
+import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
@@ -49,12 +51,13 @@ import com.zahraag.pawsitivehabits.screens.WeightScreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
-import com.zahraag.pawsitivehabits.viewmodel.EventViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.util.Collections.frequency
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -199,8 +202,8 @@ rootnavController = rootnavController
                 }
             )
         }
-
         composable(Screen.Agenda.route) {
+
             val vm: CalendarViewModel = viewModel()
             val state by vm.uiState.collectAsStateWithLifecycle()
 
@@ -210,49 +213,181 @@ rootnavController = rootnavController
                 petNamesMap = state.petNamesMap,
                 selectedDate = state.selectedDate,
                 isLoading = state.isLoading,
+
                 onDateSelected = vm::onDateSelected,
-                onDeleteCalendarEvent = vm::deleteCalendarEvent,
-                onNavigateBack = { rootnavController.popBackStack() },
-                onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
-                onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) }
-            )
-        }
 
-        composable(Screen.AddCalendarEvent.route) {
-            val vm: EventViewModel = viewModel()
-            val state by vm.uiState.collectAsStateWithLifecycle()
+                // DELETE EVENT
+                onDeleteCalendarEvent = { event ->
+                    vm.deleteCalendarEvent(event)
+                },
 
-            AddEditCalendarEventScreen(
-                petsMap = state.petsMap,
-                existingEvent = null,
-                currentUserId = vm.tokenManager.getUserId() ?: "",
-                onNavigateBack = { rootnavController.popBackStack() },
-                onSaveEvent = { event ->
-                    vm.saveCalendarEvent(event) {
-                        rootnavController.popBackStack()
-                    }
+                // DELETE ROUTINE
+                onDeleteRoutine = { routine ->
+                    vm.deleteRoutine(routine)
+                },
+
+                onNavigateBack = {
+                    rootnavController.popBackStack()
+                },
+
+                onNavigateToAddRoutine = {
+
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("routineToEditId")
+
+                    rootnavController.navigate(Screen.AddRoutine.route)
+                },
+
+
+                onNavigateToEditRoutine = { routine ->
+
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("routineToEditId", routine.id)
+
+
+                    rootnavController.navigate(
+                        Screen.AddRoutine.route
+                    )
+                },
+
+                onNavigateToAddCalendarEvent = {
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.navigate(Screen.AddCalendarEvent.route)
+                },
+
+                onNavigateToEditCalendarEvent = { event ->
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("eventToEditId", event.id)
+
+                    rootnavController.navigate(Screen.AddCalendarEvent.route)
                 }
             )
         }
 
+        composable(Screen.AddCalendarEvent.route) {
+
+            val calendarVm: CalendarViewModel = viewModel()
+            val state by calendarVm.uiState.collectAsStateWithLifecycle()
+
+            val eventToEditId =
+                rootnavController
+                    .previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<String>("eventToEditId")
+
+            val eventToEdit = state.calendarEvents
+                .find { it.id == eventToEditId }
+
+            AddEditCalendarEventScreen(
+                petsMap = state.petNamesMap,
+                existingEvent = eventToEdit,
+
+                onNavigateBack = {
+
+                    rootnavController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.popBackStack()
+                },
+
+                onSaveEvent = { event ->
+
+                    calendarVm.saveCalendarEvent(
+                        event = event,
+                        onSuccess = {
+
+                            rootnavController
+                                .previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.remove<String>("eventToEditId")
+
+                            rootnavController.popBackStack()
+                        }
+                    )
+                },
+
+               /* onDeleteEvent = { event ->
+
+                    calendarVm.deleteCalendarEvent(event)
+
+                    rootnavController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.popBackStack()
+                }*/
+            )
+        }
+
         composable(Screen.AddRoutine.route) {
-            val vm: RoutineViewModel = viewModel()
-            val state by vm.uiState.collectAsStateWithLifecycle()
+
+            val routineVm: RoutineViewModel = viewModel()
+
+            val routineState by routineVm.uiState.collectAsStateWithLifecycle()
+
+            val routineToEditId =
+                rootnavController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<String>("routineToEditId")
+
+            val calendarVm: CalendarViewModel = viewModel()
+
+            val calendarState by calendarVm.uiState.collectAsStateWithLifecycle()
+
+            val routineToEdit =
+                calendarState.routines
+                    .find { it.id == routineToEditId }
 
             AddRoutineScreen(
-                petsMap = state.petsMap,
-                onNavigateBack = { rootnavController.popBackStack() },
-                onSaveRoutine = { petId, routineType, customText, frequency, days, startDate, showInCalendar ->
-                    vm.createRoutine(
+                petsMap = routineState.petsMap,
+                routineToEdit = routineToEdit,
+
+                onNavigateBack = {
+                    rootnavController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("routineToEditId")
+
+                    rootnavController.popBackStack()
+                },
+
+                onSaveRoutine = { petId,
+                                  routineType,
+                                  customText,
+                                  frequency,
+                                  repeatDays,
+                                  startDate,
+                                  endDate ->
+
+                    routineVm.createOrUpdateRoutine(
+                        routineToEdit = routineToEdit,
                         petId = petId,
                         routineType = routineType,
                         customText = customText,
                         frequency = frequency,
-                        days = days,
+                        days = repeatDays,
                         startDate = startDate,
-                        showInCalendar = showInCalendar,
-                        onSuccess = { rootnavController.popBackStack() }
+                        endDate = endDate,
+                        onSuccess = {
+
+                            rootnavController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.remove<String>("routineToEditId")
+
+                            rootnavController.popBackStack()
+                        }
                     )
                 }
             )

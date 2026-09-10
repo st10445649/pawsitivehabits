@@ -31,6 +31,8 @@ import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
+import com.zahraag.pawsitivehabits.data.models.CalendarEvents
+import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
@@ -166,9 +168,40 @@ fun MainScreen(rootnavController: NavHostController){
                     onDateSelected = vm::onDateSelected,
                     onDeleteCalendarEvent = vm::deleteCalendarEvent,
                     onNavigateBack = { rootnavController.popBackStack() },
-                    onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
-                    onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                    onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) }
+                    onDeleteRoutine = { routine -> vm.deleteRoutine(routine) },
+                    onNavigateToAddRoutine = {
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.remove<String>("routineToEditId")
+
+                        rootnavController.navigate(Screen.AddRoutine.route)
+                    },
+                    onNavigateToEditRoutine = { routine ->
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("routineToEditId", routine.id)
+
+                        rootnavController.navigate(Screen.AddRoutine.route)
+                    },
+                    onNavigateToAddCalendarEvent = {
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.remove<String>("eventToEditId")
+
+                        rootnavController.navigate(Screen.AddCalendarEvent.route)
+                    },
+
+                    onNavigateToEditCalendarEvent = { event ->
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("eventToEditId", event.id)
+
+                        rootnavController.navigate(Screen.AddCalendarEvent.route)
+                    }
                 )
             }
             composable(BottomNavItem.Features.route) {
