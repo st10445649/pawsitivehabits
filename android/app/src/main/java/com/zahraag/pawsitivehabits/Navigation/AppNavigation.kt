@@ -393,6 +393,7 @@ rootnavController = rootnavController
             val petViewModel: PetViewModel = viewModel()
 
             val weightList by weightViewModel.weightList.collectAsState()
+            val weightUnit by weightViewModel.weightUnit.collectAsStateWithLifecycle()
 
             val userPets by petViewModel.localUserPets.collectAsState()
             val petsMap = remember(userPets) {
@@ -402,6 +403,7 @@ rootnavController = rootnavController
             WeightScreen(
                 petsMap = petsMap,
                 weightList = weightList,
+                weightUnit = weightUnit,
                 currentUserId = weightViewModel.userId,
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveWeight = { newWeight ->

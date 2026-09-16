@@ -8,9 +8,11 @@ import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.UserRepository
 import com.zahraag.pawsitivehabits.data.repository.WeightRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -23,7 +25,21 @@ class WeightViewModel(application: Application) : AndroidViewModel(application) 
 
     private val repository = WeightRepository(database.weightDao(), apiService)
 
+    private val userRepository = UserRepository(
+        userDao = database.userDao(),
+        apiService = apiService,
+        context = context
+    )
+
     val userId: String = tokenManager.getUserId() ?: ""
+
+    val weightUnit: StateFlow<String> = userRepository.getUserSettings(userId)
+        .map { it?.weightUnit ?: "kg" }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = "kg"
+        )
 
     val weightList: StateFlow<List<Weight>> = repository.getWeightsForUser(userId)
         .stateIn(

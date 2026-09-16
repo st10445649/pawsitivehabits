@@ -1,6 +1,5 @@
 package com.zahraag.pawsitivehabits.screens
 
-import android.graphics.drawable.shapes.Shape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -67,7 +66,6 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.common.fill
-import com.patrykandpatrick.vico.compose.common.shape.toComposeShape
 import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.toEpochMilli
@@ -87,6 +85,7 @@ import kotlin.collections.filter
 fun WeightScreen(
     petsMap: Map<String, String>,
     weightList: List<Weight>,
+    weightUnit: String = "kg",
     currentUserId: String = "user123",
     onNavigateBack: () -> Unit,
     onSaveWeight: (Weight) -> Unit,
@@ -226,12 +225,12 @@ fun WeightScreen(
             ) {
                 StatCard(
                     title = "Current Weight",
-                    value = "%.2f kg".format(currentWeight),
+                    value = "%.2f kg".format(currentWeight, weightUnit),
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = "Weight Range",
-                    value = "%.2f - %.2f kg".format(minWeight, maxWeight),
+                    value = "%.2f - %.2f kg".format(minWeight, maxWeight, weightUnit),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -322,6 +321,7 @@ fun WeightScreen(
                         items(petWeights) { weightItem ->
                             WeightHistoryRow(
                                 weight = weightItem,
+                                unit = weightUnit,
                                 onDelete = onDeleteWeight
                             )
                         }
@@ -332,13 +332,14 @@ fun WeightScreen(
 
         if (showAddDialog) {
             AddWeightDialog(
+                weightUnit = weightUnit,
                 onDismiss = { showAddDialog = false },
                 onAdd = { value, date ->
                     val newWeight = Weight(
                         userId = currentUserId,
                         petId = selectedPetId,
                         weightValue = value,
-                        unit = "kg",
+                        unit = weightUnit,
                         date = date.toEpochMilli()
                     )
                     onSaveWeight(newWeight)
@@ -365,7 +366,7 @@ fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun WeightHistoryRow(weight: Weight, onDelete: (Weight) -> Unit) {
+fun WeightHistoryRow(weight: Weight, unit: String,onDelete: (Weight) -> Unit) {
     val dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
     val dateStr = Instant.ofEpochMilli(weight.date)
         .atZone(ZoneId.systemDefault())
@@ -383,7 +384,7 @@ fun WeightHistoryRow(weight: Weight, onDelete: (Weight) -> Unit) {
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "%.2f %s".format(weight.weightValue, weight.unit),
+                    text = "%.2f %s".format(weight.weightValue,unit),
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = MintDarkGreen
@@ -409,6 +410,7 @@ fun WeightHistoryRow(weight: Weight, onDelete: (Weight) -> Unit) {
 
 @Composable
 fun AddWeightDialog(
+    weightUnit: String,
     onDismiss: () -> Unit,
     onAdd: (Double, LocalDate) -> Unit
 ) {
@@ -455,12 +457,12 @@ fun AddWeightDialog(
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
-                Text("Weight", fontWeight = FontWeight.Bold, color = MintDarkGreen, fontSize = 16.sp)
+                Text("Weight ($weightUnit)", fontWeight = FontWeight.Bold, color = MintDarkGreen, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = weightInput,
                     onValueChange = { weightInput = it },
-                    placeholder = { Text("0.0 kg", color = MintDarkGreen.copy(alpha = 0.4f))},
+                    placeholder = { Text("0.0 ($weightUnit)", color = MintDarkGreen.copy(alpha = 0.4f))},
                     isError = inputError != null,
                     supportingText = { inputError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                     shape = RoundedCornerShape(12.dp),
