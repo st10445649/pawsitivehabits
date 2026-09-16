@@ -5,6 +5,7 @@ import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.RoutineLogs
+import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.models.Weight
 import retrofit2.Response
 import retrofit2.http.Body
@@ -30,6 +31,18 @@ interface ApiService {
     suspend fun syncGoogleUser(
         @Body request: GoogleAuthRequest
     ): Response<AuthResponse>
+
+    @GET("auth/profile")
+    suspend fun getUserProfile(): Response<UserProfileDto>
+
+    // User Settings Operations
+    @GET("auth/settings")
+    suspend fun getUserSettings(): Response<ApiResponse<UserSettings>>
+
+    @PUT("auth/settings")
+    suspend fun updateUserSettings(
+        @Body settings: UserSettings
+    ): Response<UserSettings>
 
     // pet operations
     @GET("pets")
@@ -95,6 +108,7 @@ interface ApiService {
 
     @DELETE("weights/{id}")
     suspend fun deleteWeight(@Path("id") weightId: String): Response<Unit>
+
 }
 
 data class GoogleAuthRequest(
@@ -143,3 +157,23 @@ data class AuthResponse(
     val data: UserDataWrapper? = null,
     val message: String? = null
 )
+
+
+data class UserRequest(
+    val status: String,
+    val token: String? = null,
+    val message: String? = null
+)
+
+data class ApiResponse<T>(
+    val status: String,
+    val data: T? = null,
+    val message: String? = null
+)
+
+data class UserProfileDto(
+    val id: String,
+    val name: String?,
+    val email: String?
+)
+

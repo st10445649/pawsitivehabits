@@ -86,7 +86,7 @@ class CalendarRepositoryImpl(
 
     override suspend fun insertEvent(event: CalendarEvents) {
         val localEvent = event.copy(isSynced = false)
-        eventsDao.insertEvent(localEvent)
+        eventsDao.insertEvent(localEvent)//add to room
         try {
             val response = apiService.createCalendarEvent(localEvent)
             if (!response.isSuccessful&& response.body() != null) {
