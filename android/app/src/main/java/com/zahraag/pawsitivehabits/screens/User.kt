@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -19,19 +20,23 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.ui.theme.*
+import com.zahraag.pawsitivehabits.viewmodel.UserUiState
+import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 
 @Composable
 fun SettingsScreen(
-    userSettings: UserSettings = UserSettings(id = "user123"),
-    userName: String = "User",
-    userEmail: String = "user@example.com",
+    uiState: UserUiState,
     onNavigateBack: () -> Unit,
     onSaveSettings: (UserSettings) -> Unit,
     onSyncDataClick: () -> Unit,
-    onExportDataClick: (android.net.Uri) -> Unit
+    onExportDataClick: (Uri) -> Unit,
 ) {
+    val userSettings = uiState.settings ?: UserSettings(userId = "")
+    val userName = uiState.userName ?: "Pawsitively Awesome Parent"
+    val userEmail = uiState.userEmail ?: ""
 
     var notificationsEnabled by remember(userSettings) { mutableStateOf(userSettings.notificationsEnabled) }
     var weightUnit by remember(userSettings) { mutableStateOf(userSettings.weightUnit) }

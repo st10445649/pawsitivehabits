@@ -17,18 +17,12 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
-import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
-import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
-import com.zahraag.pawsitivehabits.data.SampleData.sampleWeightRecords
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
-import com.zahraag.pawsitivehabits.data.models.CalendarEvents
-import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.UserSettings
-import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
@@ -54,12 +48,11 @@ import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 import com.zahraag.pawsitivehabits.viewmodel.WeightViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.util.Collections.frequency
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -471,14 +464,23 @@ rootnavController = rootnavController
         }
 
         composable(Screen.Settings.route){
+            val vm: UserViewModel = viewModel()
+
+            val uiState by vm.uiState.collectAsStateWithLifecycle()
+
             SettingsScreen(
-                userSettings = UserSettings(id = "user123"),
-                userName = "John Doe",
-                userEmail = "johndoe@gmail.com",
+                uiState = uiState,
                 onNavigateBack = { rootnavController.popBackStack() },
-                onSaveSettings = { },
-                onSyncDataClick = { }
-            ) { }
+                onSaveSettings = { updatedSettings ->
+                    vm.updateWeightUnit(updatedSettings.weightUnit)
+                    vm.toggleNotifications(updatedSettings.notificationsEnabled)
+                },
+                onSyncDataClick = {
+                    vm.loadUserData()
+
+                },
+                onExportDataClick = { }
+            )
         }
 
         composable(Screen.EmergencyContacts.route) {
