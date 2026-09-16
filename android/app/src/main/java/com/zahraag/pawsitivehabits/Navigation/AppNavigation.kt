@@ -46,6 +46,7 @@ import com.zahraag.pawsitivehabits.screens.WeightScreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
+import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
 import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
@@ -135,30 +136,46 @@ rootnavController = rootnavController
         }
 
         composable(Screen.Home.route) {
+
+            val homeViewModel: HomeViewModel = viewModel()
+
+            val pets by homeViewModel.pets.collectAsStateWithLifecycle()
+            val selectedPetId by homeViewModel.selectedPetId.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+
+            val userName by homeViewModel.userName.collectAsStateWithLifecycle()
+            val routines by homeViewModel.routines.collectAsStateWithLifecycle()
+            val upcomingEvent by homeViewModel.upcomingEvent.collectAsStateWithLifecycle()
+
             HomeScreen(
-                pets= samplePets,
-                selectedPetId= samplePets.first().id,
-                onSelectPet={ id -> samplePets.first().id},
-                onNavigateToPetDetails = { petId ->
-                    rootnavController.navigate("pet_details/$petId")
+                pets = pets,
+                selectedPetId = selectedPetId,
+                onSelectPet = { id ->
+                    homeViewModel.selectPet(id)
                 },
-                onNavigateToFeature = {
+                onNavigateToPetDetails = {
+                },
+                onNavigateToFeature = { featureRoute ->
+                    rootnavController.navigate(featureRoute)
                 },
                 onLogout = {
-                    // Clear stored tokens and Firebase auth session
                     tokenManager.clear()
                     FirebaseAuth.getInstance().signOut()
-
                     WorkManager.getInstance(context).cancelAllWork()
 
                     CoroutineScope(Dispatchers.IO).launch {
                         AppDatabase.getDatabase(context).clearAllTables()
                     }
 
-                    // Navigate to login and pop the entire backstack
                     rootnavController.navigate(Screen.Login.route) {
                         popUpTo(0) { inclusive = true }
                     }
+                },
+                userName = userName,
+                routines = routines,
+                event = upcomingEvent as String?,
+                onToggleRoutine = { routineId, isCompleted ->
+                    homeViewModel.toggleRoutine(routineId)
                 }
             )
         }

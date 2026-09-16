@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import androidx.room.Update
 import com.patrykandpatrick.vico.compose.common.insets
 import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Routine
@@ -34,6 +35,14 @@ interface CalendarEventsDao {
         deleteAllForUser(userId)
         insertEvents(events)
     }
+
+    @Query("""
+        SELECT * FROM calendarEvents_table 
+        WHERE petId = :petId AND time >= :currentTimeMillis 
+        ORDER BY time ASC 
+        LIMIT 1
+    """)
+    fun getNextUpcomingEventForPet(petId: String, currentTimeMillis: Long): Flow<CalendarEvents?>
 }
 
 @Dao
@@ -62,6 +71,9 @@ interface RoutineDao {
         deleteAllForUser(userId)
         insertRoutines(routines)
     }
+
+    @Query("SELECT * FROM routine_table WHERE petId = :petId")
+    fun getRoutinesForPet(petId: String): Flow<List<Routine>>
 }
 
 @Dao
@@ -86,4 +98,13 @@ interface RoutineLogsDao {
         deleteAllLogs()
         insertLogs(routineLogs)
     }
+
+    @Query("SELECT * FROM routineLogs_table WHERE petId = :petId AND date = :date")
+    fun getLogsForDate(petId: String, date: String): Flow<List<RoutineLogs>>
+
+    @Query("SELECT * FROM routineLogs_table WHERE routineId = :routineId AND petId = :petId AND date = :date LIMIT 1")
+    suspend fun getLog(routineId: String, petId: String, date: String): RoutineLogs?
+
+    @Update
+    suspend fun updateLog(log: RoutineLogs)
 }

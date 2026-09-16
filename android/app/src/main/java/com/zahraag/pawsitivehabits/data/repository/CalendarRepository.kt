@@ -15,10 +15,16 @@ import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.RoutineLogs
 import com.zahraag.pawsitivehabits.data.remote.ApiService
 import com.zahraag.pawsitivehabits.helpers.OfflineSyncWorker
+import com.zahraag.pawsitivehabits.screens.RoutineItem
+import kotlinx.coroutines.NonCancellable.isCompleted
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import kotlin.collections.filter
 
 interface CalendarRepository {
     fun getEventsForDate(userId: String, date: LocalDate): Flow<List<CalendarEvents>>
@@ -31,6 +37,8 @@ interface CalendarRepository {
     suspend fun updateRoutine(routine: Routine)
     suspend fun deleteRoutine(routineId: String)
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
+    fun getRoutinesForPetAndDate(petId: String, dateEpochMillis: Long): Flow<List<RoutineItem>>
+    fun getNextUpcomingEventForPet(petId: String, currentTimeMillis: Long): Flow<CalendarEvents?>
 }
 
 class CalendarRepositoryImpl(
@@ -158,12 +166,91 @@ class CalendarRepositoryImpl(
         }
     }
 
+    override fun getRoutinesForPetAndDate(
+        petId: String,
+        dateEpochMillis: Long
+    ): Flow<List<RoutineItem>> {
+        val targetLocalDate = Instant.ofEpochMilli(dateEpochMillis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+
+        val targetDayOfWeekName = targetLocalDate.dayOfWeek.name // "MONDAY", "TUESDAY", etc.
+        val targetEpochDay = targetLocalDate.toEpochDay()
+
+        return combine(
+            routineDao.getRoutinesForPet(petId),
+            logsDao.getLogsForDate(petId, targetLocalDate.toString())
+        ) { routines: List<Routine>, logs: List<RoutineLogs> ->
+            val completedRoutineIds = logs.filter { it.isCompleted }.map { it.routineId }.toSet()
+
+            routines
+                .filter { routine ->
+                    val startLocalDate = Instant.ofEpochMilli(routine.startDate)
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDate()
+                    val startEpochDay = startLocalDate.toEpochDay()
+
+                    // Check if routine started on or before target date
+                    if (targetEpochDay < startEpochDay) return@filter false
+
+                    // Check if routine has ended (if endDate is specified)
+                    routine.endDate?.let { endMillis ->
+                        val endLocalDate = Instant.ofEpochMilli(endMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        if (targetEpochDay > endLocalDate.toEpochDay()) return@filter false
+                    }
+
+                    when (routine.frequency.uppercase()) {
+                        "DAILY" -> true
+                        "WEEKLY" -> {
+                            val activeDays = routine.repeatDays
+                                ?.split(",")
+                                ?.map { it.trim().uppercase() }
+                                ?: emptyList()
+                            activeDays.contains(targetDayOfWeekName)
+                        }
+                        "MONTHLY" -> {
+                            targetLocalDate.dayOfMonth == startLocalDate.dayOfMonth
+                        }
+                        else -> true
+                    }
+                }
+                .map { routine ->
+
+                    val formattedTime = routine.time?.let { timeMillis ->
+                        Instant.ofEpochMilli(timeMillis)
+                            .atZone(ZoneId.systemDefault())
+                            .format(DateTimeFormatter.ofPattern("hh:mm a"))
+                    } ?: "All Day"
+
+                    RoutineItem(
+                        id = routine.id,
+                        title = routine.title,
+                        time = formattedTime,
+                        isCompleted = completedRoutineIds.contains(routine.id)
+                    )
+                }
+        }
+    }
+
+
+
+    override fun getNextUpcomingEventForPet(
+        petId: String,
+        currentTimeMillis: Long
+    ): Flow<CalendarEvents?> {
+        return eventsDao.getNextUpcomingEventForPet(petId, currentTimeMillis)
+    }
+
     override suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate) {
         val log = RoutineLogs(
             routineId = routineId,
             petId = petId,
             completedAt = date.atTime(LocalTime.now()).atZone(ZoneId.systemDefault()).toInstant()
-                .toEpochMilli()
+                .toEpochMilli(),
+            isCompleted = true,
+            date = date.toString()
         )
         logsDao.insertLog(log)
         try {

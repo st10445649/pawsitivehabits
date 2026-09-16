@@ -38,25 +38,18 @@ data class RoutineItem(
 
 @Composable
 fun HomeScreen(
+    userName: String,
     pets: List<Pet>,
     selectedPetId: String?,
+    routines: List<RoutineItem>,
+    event:String?,
+    onToggleRoutine: (String, Boolean) -> Unit,
     onSelectPet: (String) -> Unit,
     onNavigateToPetDetails: (String) -> Unit,
     onNavigateToFeature: (route: String) -> Unit,
     onLogout: () -> Unit
 ) {
     val activePet = pets.find { it.id == selectedPetId } ?: pets.firstOrNull()
-
-    var routines by remember {
-        mutableStateOf(
-            listOf(
-                RoutineItem("1", "Morning Walk & Exercise", "07:30 AM", true),
-                RoutineItem("2", "Breakfast Feeding & Fresh Water", "08:00 AM", true),
-                RoutineItem("3", "Evening Walk", "05:30 PM", false),
-                RoutineItem("4", "Grooming & Brushing", "07:00 PM", false)
-            )
-        )
-    }
 
     Box(
         modifier = Modifier
@@ -79,7 +72,7 @@ fun HomeScreen(
             ) {
                 Column {
                     Text(
-                        text = "Hello! John",
+                        text = "Hello! ${userName.ifEmpty { "Pet Parent" }}",
                         style = MaterialTheme.typography.labelLarge,
                         color = TextMuted
                     )
@@ -192,12 +185,12 @@ fun HomeScreen(
                             color = MintDarkGreen.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "Annual Checkup for ${activePet?.name ?: "Pet"}",
+                            text = "${activePet?.name ?: "Pet"} ${event ?: "Event"}",
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                             color = MintDarkGreen
                         )
                         Text(
-                            text = "14 Aug 2026 • 10:00 AM",
+                            text = "",
                             style = MaterialTheme.typography.bodySmall,
                             color = TextMuted
                         )
@@ -234,40 +227,44 @@ fun HomeScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    routines.forEach { routine ->
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable {
-                                    routines = routines.map {
-                                        if (it.id == routine.id) it.copy(isCompleted = !it.isCompleted) else it
-                                    }
+                    if (routines.isEmpty()) {
+                        Text(
+                            text = "No routines scheduled for today.",
+                            color = TextMuted,
+                            fontSize = 14.sp
+                        )
+                    } else {
+                        routines.forEach { routine ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onToggleRoutine(routine.id, !routine.isCompleted) }
+                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Icon(
+                                    imageVector = if (routine.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.Circle,
+                                    contentDescription = null,
+                                    tint = if (routine.isCompleted) MintDarkGreen else TextMuted,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = routine.title,
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            fontWeight = FontWeight.SemiBold,
+                                            textDecoration = if (routine.isCompleted) TextDecoration.LineThrough else TextDecoration.None
+                                        ),
+                                        color = if (routine.isCompleted) TextMuted else TextDark
+                                    )
+                                    Text(
+                                        text = routine.time,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = TextMuted
+                                    )
                                 }
-                                .padding(vertical = 8.dp, horizontal = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
-                        ) {
-                            Icon(
-                                imageVector = if (routine.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.Circle,
-                                contentDescription = null,
-                                tint = if (routine.isCompleted) MintDarkGreen else TextMuted,
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = routine.title,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.SemiBold,
-                                        textDecoration = if (routine.isCompleted) TextDecoration.LineThrough else TextDecoration.None
-                                    ),
-                                    color = if (routine.isCompleted) TextMuted else TextDark
-                                )
-                                Text(
-                                    text = routine.time,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = TextMuted
-                                )
                             }
                         }
                     }
