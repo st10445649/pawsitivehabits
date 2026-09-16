@@ -13,6 +13,8 @@ data class RoutineLogs(
     val id: String = org.bson.types.ObjectId().toHexString(),
     var routineId: String,
     var petId: String,
+    val date: String,
+    val isCompleted: Boolean = false,
     var completedAt: Long,
     @kotlinx.serialization.Transient
     var isSynced: Boolean = false
