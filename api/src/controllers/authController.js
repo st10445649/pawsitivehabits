@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const UserSettings = require('../models/userSettings');
 const admin = require('../config/firebaseAdmin');
 const { User } = require('../models/User');
 const jwt = require('jsonwebtoken');
