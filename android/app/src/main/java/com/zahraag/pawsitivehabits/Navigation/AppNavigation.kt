@@ -491,17 +491,17 @@ rootnavController = rootnavController
                 uiState = uiState,
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveSettings = { updatedSettings ->
-                    vm.updateWeightUnit(updatedSettings.weightUnit)
-                    vm.toggleNotifications(updatedSettings.notificationsEnabled)
+                    vm.saveSettings(updatedSettings)
                 },
                 onSyncDataClick = {
+                    vm.syncAllData()
                     vm.loadUserData()
-
                 },
-                onExportDataClick = { }
+                onExportDataClick = { uri ->
+                    vm.exportPetData(uri)
+                }
             )
         }
-
         composable(Screen.EmergencyContacts.route) {
             EmergencyContactsScreen(
                 contactsList = emptyList(),
