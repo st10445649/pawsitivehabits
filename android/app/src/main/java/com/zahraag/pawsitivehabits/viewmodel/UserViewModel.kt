@@ -10,6 +10,10 @@ import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.UserRepository
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import android.net.Uri
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class UserUiState(
     val userName: String = "",
@@ -67,6 +71,53 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
             }
 
             userRepository.syncUserSettings()
+        }
+    }
+    fun saveSettings(updatedSettings: UserSettings) {
+        viewModelScope.launch {
+            userRepository.updateSettings(updatedSettings)
+        }
+    }
+
+    fun exportPetData(uri: Uri) {
+        val userId = tokenManager.getUserId() ?: return
+
+        viewModelScope.launch {
+            try {
+                val db = AppDatabase.getDatabase(context)
+                val pets = db.petDao().getPetsByUserId(userId).first()
+                val weights = db.weightDao().getWeightsForUser(userId).first()
+                val petNameMap = pets.associateBy({ it.id }, { it.name })
+
+                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val csv = StringBuilder()
+
+                csv.append("PETS\n")
+                csv.append("Name,Species,Breed,Date of Birth,Microchip ID,Neutered\n")
+                pets.forEach { pet ->
+                    csv.append(
+                        "${pet.name},${pet.petType},${pet.breed ?: ""}," +
+                                "${dateFormat.format(Date(pet.dateOfBirth))},${pet.microchipId ?: ""},${pet.isNeutered}\n"
+                    )
+                }
+
+                csv.append("\nWEIGHT LOGS\n")
+                csv.append("Pet,Weight,Unit,Date\n")
+                weights.forEach { weight ->
+                    csv.append(
+                        "${petNameMap[weight.petId] ?: weight.petId},${weight.weightValue}," +
+                                "${weight.unit},${dateFormat.format(Date(weight.date))}\n"
+                    )
+                }
+
+                context.contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(csv.toString().toByteArray())
+                }
+
+                _uiState.update { it.copy(errorMessage = null) }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(errorMessage = "Export failed: ${e.message}") }
+            }
         }
     }
 
