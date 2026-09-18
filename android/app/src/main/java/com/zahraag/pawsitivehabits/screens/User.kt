@@ -26,6 +26,7 @@ import com.zahraag.pawsitivehabits.ui.theme.*
 import com.zahraag.pawsitivehabits.viewmodel.UserUiState
 import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.ui.graphics.Color
 import com.zahraag.pawsitivehabits.data.models.Pet
 
 @Composable
