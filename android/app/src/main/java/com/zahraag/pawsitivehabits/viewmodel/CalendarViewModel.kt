@@ -29,6 +29,8 @@ data class AgendaUiState(
     val routines: List<Routine> = emptyList(),
     val calendarEvents: List<CalendarEvents> = emptyList(),
     val petNamesMap: Map<String, String> = emptyMap(),
+
+    val petColorMap: Map<String, String> = emptyMap(),
     val isLoading: Boolean = false
 )
 class CalendarViewModel(application: Application) : AndroidViewModel(application) {
@@ -65,6 +67,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                     routines = routines,
                     calendarEvents = events,
                     petNamesMap = pets.associate { it.id to it.name },
+                    petColorMap = pets.associate { it.id to (it.customColour ?: "#FF5733") },
                     selectedDate = selectedDate,
                     isLoading = false
                 )
