@@ -241,16 +241,31 @@ fun MainScreen(rootnavController: NavHostController){
 
                 SettingsScreen(
                     uiState = uiState,
+                    pets = uiState.pets,
                     onNavigateBack = { rootnavController.popBackStack() },
                     onSaveSettings = { updatedSettings ->
-                        vm.updateWeightUnit(updatedSettings.weightUnit)
-                        vm.toggleNotifications(updatedSettings.notificationsEnabled)
+                        vm.saveSettings(updatedSettings)
                     },
                     onSyncDataClick = {
+                        vm.syncAllData()
                         vm.loadUserData()
-
                     },
-                    onExportDataClick = { }
+                    onExportDataClick = { petId, uri ->
+                        vm.exportPetData(petId, uri)
+                    },
+                    onLogout = {
+                        tokenManager.clear()
+                        FirebaseAuth.getInstance().signOut()
+                        WorkManager.getInstance(context).cancelAllWork()
+
+                        CoroutineScope(Dispatchers.IO).launch {
+                            AppDatabase.getDatabase(context).clearAllTables()
+                        }
+
+                        rootnavController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
                 )
             }
 
