@@ -25,14 +25,18 @@ import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.ui.theme.*
 import com.zahraag.pawsitivehabits.viewmodel.UserUiState
 import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
+import androidx.compose.material.icons.automirrored.filled.Logout
+import com.zahraag.pawsitivehabits.data.models.Pet
 
 @Composable
 fun SettingsScreen(
     uiState: UserUiState,
+    pets: List<Pet>,
     onNavigateBack: () -> Unit,
     onSaveSettings: (UserSettings) -> Unit,
     onSyncDataClick: () -> Unit,
-    onExportDataClick: (Uri) -> Unit,
+    onExportDataClick: (String, Uri) -> Unit,
+    onLogout: () -> Unit,
 ) {
     val userSettings = uiState.settings ?: UserSettings(userId = "")
     val userName = uiState.userName ?: "Pawsitively Awesome Parent"
