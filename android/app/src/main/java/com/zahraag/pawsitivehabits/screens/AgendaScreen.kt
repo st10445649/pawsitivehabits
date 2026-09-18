@@ -3,6 +3,7 @@ package com.zahraag.pawsitivehabits.screens
 import android.R.attr.enabled
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -105,12 +106,14 @@ import java.time.ZoneId
 import java.util.Locale.getDefault
 
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AgendaScreen(
     routinesList: List<Routine>,
     calendarEventsList: List<CalendarEvents>,
     petNamesMap: Map<String, String>,
+    petColorMap: Map<String, String> = emptyMap(),
     selectedDate: LocalDate,
     isLoading: Boolean = false,
     onDateSelected: (LocalDate) -> Unit,
@@ -195,6 +198,7 @@ fun AgendaScreen(
                 RoutinesListView(
                     routines = routinesList,
                     petNamesMap = petNamesMap,
+                    petColorMap = petColorMap,
                     onRoutineClick = { routine ->
                         onNavigateToEditRoutine(routine)
                     },
@@ -360,7 +364,7 @@ fun CalendarView(
         val map = mutableMapOf<LocalDate, MutableList<AgendaDisplayItem>>()
         routines.forEach { routine ->
             val date = routine.startDate.toLocalDate()
-        map.getOrPut(date){mutableListOf()}.add(AgendaDisplayItem.RoutineItem(routine))}
+            map.getOrPut(date){mutableListOf()}.add(AgendaDisplayItem.RoutineItem(routine))}
         events.forEach { event ->
             val date = (event.time ?: System.currentTimeMillis()).toLocalDate()
             map.getOrPut(date){mutableListOf()}.add(AgendaDisplayItem.EventItem(event))
@@ -387,7 +391,7 @@ fun CalendarView(
                 }
             ){
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous Month", tint = MintDarkGreen
-                , modifier = Modifier.size(20.dp))
+                    , modifier = Modifier.size(20.dp))
             }
             Text(
                 text = "${visibleMonth.month.getDisplayName(TextStyle.FULL, getDefault())} ${visibleMonth.year}",
@@ -405,7 +409,7 @@ fun CalendarView(
             ){
                 Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight,
                     contentDescription = "Previous Month", tint = MintDarkGreen
-                        , modifier = Modifier.size(20.dp))
+                    , modifier = Modifier.size(20.dp))
             }
         }
         Spacer(modifier = Modifier.height(8.dp))
@@ -418,7 +422,7 @@ fun CalendarView(
         HorizontalCalendar(
             state = calendarState,
             dayContent = {
-                day ->
+                    day ->
                 val hasItems = itemsByDate[day.date]?.isNotEmpty() == true
                 CalendarDayCell(
                     day=day,
@@ -554,7 +558,7 @@ fun CalendarDayCell(
             text = day.date.dayOfMonth.toString(),
             fontSize =  15.sp,
             fontWeight = if (isSelected || isToday) FontWeight.Bold else
-            FontWeight.Normal,
+                FontWeight.Normal,
             color = when { isSelected -> SurfaceWhite
                 isCurrentMonth -> MintDarkGreen
                 else -> MintDarkGreen.copy(alpha =0.3f)
@@ -584,6 +588,7 @@ fun AgendaCard(
     badgeText: String,
     badgeColor: Color,
     iconRes: Int,
+    borderColor: Color? = null,
     onClick: (() -> Unit)? = null,
     onEditClick: (() -> Unit)? = null,
     onDeleteClick: (() -> Unit)? = null
@@ -594,8 +599,9 @@ fun AgendaCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = borderColor?.let { BorderStroke(2.dp, it) },
         modifier = Modifier.fillMaxWidth()
-        .clickable(enabled = onClick != null) { onClick?.invoke() }
+            .clickable(enabled = onClick != null) { onClick?.invoke() }
 
     ) {
         Row(
@@ -1054,6 +1060,7 @@ fun AddEditCalendarEventScreen(
 fun RoutinesListView(
     routines: List<Routine>,
     petNamesMap: Map<String, String>,
+    petColorMap: Map<String, String> = emptyMap(),
     onRoutineClick: (Routine) -> Unit,
     onEditRoutine: (Routine) -> Unit,
     onDeleteRoutine: (Routine) -> Unit
@@ -1078,6 +1085,7 @@ fun RoutinesListView(
                 key = { routine -> routine.id }
             ) { routine ->
                 val petName = petNamesMap[routine.petId] ?: "Pet"
+                val petColorHex = petColorMap[routine.petId]
                 AgendaCard(
                     title = routine.title,
                     petName = petName,
@@ -1085,6 +1093,7 @@ fun RoutinesListView(
                     badgeText = "Routine",
                     badgeColor = MintDarkGreen,
                     iconRes = getRoutineIconRes(routine.title),
+                    borderColor = petColorHex.toComposeColor(),
                     onClick = { onEditRoutine(routine) },
                     onEditClick = { onEditRoutine(routine) },
                     onDeleteClick = { onDeleteRoutine(routine) }
@@ -1545,5 +1554,3 @@ fun AddRoutineScreen(
         }
     }
 }
-
-
