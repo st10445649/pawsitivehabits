@@ -482,26 +482,6 @@ rootnavController = rootnavController
             ) { }
         }
 
-        composable(Screen.Settings.route){
-            val vm: UserViewModel = viewModel()
-
-            val uiState by vm.uiState.collectAsStateWithLifecycle()
-
-            SettingsScreen(
-                uiState = uiState,
-                onNavigateBack = { rootnavController.popBackStack() },
-                onSaveSettings = { updatedSettings ->
-                    vm.saveSettings(updatedSettings)
-                },
-                onSyncDataClick = {
-                    vm.syncAllData()
-                    vm.loadUserData()
-                },
-                onExportDataClick = { uri ->
-                    vm.exportPetData(uri)
-                }
-            )
-        }
         composable(Screen.EmergencyContacts.route) {
             EmergencyContactsScreen(
                 contactsList = emptyList(),
