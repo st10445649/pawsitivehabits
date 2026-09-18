@@ -48,6 +48,9 @@ fun SettingsScreen(
     var biometricEnabled by remember(userSettings) { mutableStateOf(userSettings.biometricLockEnabled) }
 
     var isLanguageDropdownExpanded by remember { mutableStateOf(false) }
+    var showPetPickerDialog by remember { mutableStateOf(false) }
+    var selectedPetForExport by remember { mutableStateOf<Pet?>(null) }
+    var showLogoutConfirmDialog by remember { mutableStateOf(false) }
 
     fun triggerSave(
         newNotifications: Boolean = notificationsEnabled,
@@ -67,9 +70,12 @@ fun SettingsScreen(
     }
 
     val exportFileLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.CreateDocument("text/csv")
+        contract = ActivityResultContracts.CreateDocument("application/pdf")
     ) { uri ->
-        uri?.let { onExportDataClick(it) }
+        val pet = selectedPetForExport
+        if (uri != null && pet != null) {
+            onExportDataClick(pet.id, uri)
+        }
     }
 
     val languageMap = mapOf("en" to "English", "es" to "Spanish", "fr" to "French")
@@ -387,8 +393,7 @@ fun SettingsScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                // Prompts file launcher to create "pet_records.csv"
-                                exportFileLauncher.launch("pet_records.csv")
+                                showPetPickerDialog = true
                             }
                             .padding(vertical = 4.dp)
                     ) {
@@ -421,6 +426,99 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Logout Card
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showLogoutConfirmDialog = true }
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null,
+                        tint = Color(0xFFD32F2F),
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Log Out",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color(0xFFD32F2F)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+
+        // Pet Picker Dialog for Export
+        if (showPetPickerDialog) {
+            AlertDialog(
+                onDismissRequest = { showPetPickerDialog = false },
+                containerColor = SurfaceWhite,
+                title = { Text("Select a Pet", color = MintDarkGreen, fontWeight = FontWeight.Bold) },
+                text = {
+                    if (pets.isEmpty()) {
+                        Text("You haven't added any pets yet.", color = TextDark)
+                    } else {
+                        Column {
+                            pets.forEach { pet ->
+                                Text(
+                                    text = pet.name,
+                                    color = TextDark,
+                                    fontWeight = FontWeight.SemiBold,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable {
+                                            selectedPetForExport = pet
+                                            showPetPickerDialog = false
+                                            exportFileLauncher.launch("${pet.name}_report.pdf")
+                                        }
+                                        .padding(vertical = 12.dp)
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showPetPickerDialog = false }) {
+                        Text("Cancel", color = MintDarkGreen)
+                    }
+                }
+            )
+        }
+
+        // Logout Confirmation Dialog
+        if (showLogoutConfirmDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutConfirmDialog = false },
+                containerColor = SurfaceWhite,
+                title = { Text("Log Out", color = MintDarkGreen, fontWeight = FontWeight.Bold) },
+                text = { Text("Are you sure you want to log out?", color = TextDark) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showLogoutConfirmDialog = false
+                        onLogout()
+                    }) {
+                        Text("Log Out", color = Color(0xFFD32F2F), fontWeight = FontWeight.Bold)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showLogoutConfirmDialog = false }) {
+                        Text("Cancel", color = MintDarkGreen)
+                    }
+                }
+            )
         }
     }
 }
