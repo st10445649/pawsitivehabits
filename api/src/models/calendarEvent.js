@@ -15,9 +15,9 @@ const CalendarEventSchema = new mongoose.Schema({
     title: { type: String, required: true, trim:true},
     category: { type: String, required: true, trim:true},
     date: { type: Number, required: true }, 
-    time: { type: String, default: '' },
+    time: { type: Number, default: 0 },
     notes: { type: String, default: '' },
-    reminderMinutes: {type: Number, default:'30'}
+    reminderMinutes: {type: Number, default:30}
 }, { timestamps: true });
 
 module.exports = mongoose.model('CalendarEvent', CalendarEventSchema);

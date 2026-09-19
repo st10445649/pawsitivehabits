@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const Weight = require('../models/Weight');
+const Weight = require('../models/weight');
 
 const getUserId = (req) => req.user?.id || req.user?._id;
 
@@ -96,6 +96,22 @@ exports.deleteWeight = async (req, res) => {
     }
 
     res.status(204).send();
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+exports.getAllWeights = async (req, res) => {
+  try {
+    const rawUserId = getUserId(req);
+    if (!rawUserId) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
+
+    const userId = new mongoose.Types.ObjectId(rawUserId);
+    const weights = await Weight.find({ userId }).sort({ date: -1 });
+
+    res.status(200).json(weights);
   } catch (error) {
     res.status(500).json({ status: 'error', message: error.message });
   }

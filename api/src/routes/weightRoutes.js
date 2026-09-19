@@ -9,5 +9,6 @@ router.post('/', weightController.addWeight);
 router.get('/pet/:petId', weightController.getPetWeights);
 router.get('/:id', weightController.getWeightById);
 router.delete('/:id', weightController.deleteWeight);
+router.get('/', weightController.getAllWeights);
 
 module.exports = router;
