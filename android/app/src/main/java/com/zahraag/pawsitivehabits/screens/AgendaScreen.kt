@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BottomSheetDefaults
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -57,8 +58,10 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -102,6 +105,7 @@ import com.zahraag.pawsitivehabits.data.models.CategoryOption
 import com.zahraag.pawsitivehabits.data.models.RoutineTypeOption
 import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import java.util.Locale.getDefault
 
@@ -1140,6 +1144,7 @@ fun AgendaTabButton(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddRoutineScreen(
     petsMap: Map<String, String>,
@@ -1152,7 +1157,8 @@ fun AddRoutineScreen(
         frequency: String,
         repeatDays: Set<String>,
         startDate: LocalDate,
-        endDate: LocalDate
+        endDate: LocalDate,
+        time: Long
     ) -> Unit
 ){
 
@@ -1205,6 +1211,19 @@ fun AddRoutineScreen(
             } ?: LocalDate.now()
         )
     }
+
+    var selectedTime by remember(routineToEdit) {
+        mutableStateOf(
+            routineToEdit?.time?.let { epochMillis ->
+                Instant.ofEpochMilli(epochMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalTime()
+            } ?: LocalTime.now()
+        )
+    }
+
+    var showTimePicker by remember { mutableStateOf(false) }
+    val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
     var showStartDatePicker by remember { mutableStateOf(false) }
     var showEndDatePicker by remember { mutableStateOf(false) }
 
@@ -1537,10 +1556,67 @@ fun AddRoutineScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            if (showTimePicker) {
+                val timePickerState = rememberTimePickerState(
+                    initialHour = selectedTime.hour,
+                    initialMinute = selectedTime.minute,
+                    is24Hour = false
+                )
+
+                AlertDialog(
+                    onDismissRequest = { showTimePicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                selectedTime = LocalTime.of(timePickerState.hour, timePickerState.minute)
+                                showTimePicker = false
+                            }
+                        ) {
+                            Text("OK", color = MintDarkGreen)
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showTimePicker = false }) {
+                            Text("Cancel", color = MintDarkGreen)
+                        }
+                    },
+                    text = {
+                        TimePicker(state = timePickerState)
+                    }
+                )
+            }
+
+            Text("Time", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+            Spacer(modifier = Modifier.height(10.dp))
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MintCardSurface),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showTimePicker = true }
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text("Time", fontSize = 12.sp, color = MintDarkGreen.copy(alpha = 0.7f))
+                        Text(selectedTime.format(timeFormatter), fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
 
             Button(
                 onClick = {
                     val title = if (selectedRoutineType == "Custom") customRoutineText else selectedRoutineType
+                    val timeAsLong = selectedTime
+                        .atDate(LocalDate.now())
+                        .atZone(ZoneId.systemDefault())
+                        .toInstant()
+                        .toEpochMilli()
                     onSaveRoutine(
                         selectedPetId,
                         selectedRoutineType,
@@ -1548,7 +1624,8 @@ fun AddRoutineScreen(
                         selectedFrequency,
                         selectedDays,
                         startDate,
-                        endDate
+                        endDate,
+                        timeAsLong
                     )
                 },
                 shape = RoundedCornerShape(20.dp),

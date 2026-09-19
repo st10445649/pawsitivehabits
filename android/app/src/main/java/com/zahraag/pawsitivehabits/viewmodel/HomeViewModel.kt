@@ -102,7 +102,7 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 calendarRepository.getRoutinesForPetAndDate(
                     petId = petId,
-                    dateEpochMillis = System.currentTimeMillis()
+                    dateEpochMillis = getStartOfDayEpochMillis()
                 )
             }
         }

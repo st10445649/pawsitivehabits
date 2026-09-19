@@ -56,6 +56,7 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
         days: Set<String>,
         startDate: LocalDate,
         endDate: LocalDate,
+        time: Long,
         onSuccess: () -> Unit
     ) {
         viewModelScope.launch {
@@ -76,7 +77,8 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 frequency = frequency,
                 startDate = startDateMillis,
                 endDate = endDateMillis,
-                repeatDays = repeatDaysString
+                repeatDays = repeatDaysString,
+                time = time
             ) ?: Routine(
                 userId = currentUserId,
                 petId = petId,
@@ -84,7 +86,8 @@ class RoutineViewModel(application: Application) : AndroidViewModel(application)
                 frequency = frequency,
                 startDate = startDateMillis,
                 endDate = endDateMillis,
-                repeatDays = repeatDaysString
+                repeatDays = repeatDaysString,
+                time=time
             )
 
             if (routineToEdit != null) {

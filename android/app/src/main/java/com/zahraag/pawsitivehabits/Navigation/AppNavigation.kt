@@ -381,7 +381,8 @@ rootnavController = rootnavController
                                   frequency,
                                   repeatDays,
                                   startDate,
-                                  endDate ->
+                                  endDate,
+                                  time->
 
                     routineVm.createOrUpdateRoutine(
                         routineToEdit = routineToEdit,
@@ -392,6 +393,7 @@ rootnavController = rootnavController
                         days = repeatDays,
                         startDate = startDate,
                         endDate = endDate,
+                        time = time,
                         onSuccess = {
 
                             rootnavController.previousBackStackEntry

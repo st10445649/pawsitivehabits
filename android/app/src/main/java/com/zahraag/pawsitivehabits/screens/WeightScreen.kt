@@ -225,12 +225,12 @@ fun WeightScreen(
             ) {
                 StatCard(
                     title = "Current Weight",
-                    value = "%.2f kg".format(currentWeight, weightUnit),
+                    value = "%.2f".format(currentWeight, weightUnit),
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = "Weight Range",
-                    value = "%.2f - %.2f kg".format(minWeight, maxWeight, weightUnit),
+                    value = "%.2f - %.2f".format(minWeight, maxWeight, weightUnit),
                     modifier = Modifier.weight(1f)
                 )
             }
