@@ -1,5 +1,6 @@
 package com.zahraag.pawsitivehabits.screens
 
+import android.R.attr.enabled
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -10,6 +11,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -104,6 +108,9 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 import java.util.UUID
+import com.zahraag.pawsitivehabits.data.models.CalendarEvents
+import com.zahraag.pawsitivehabits.data.models.Weight
+import com.zahraag.pawsitivehabits.toLocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -315,6 +322,16 @@ fun AddPetScreen(
 
     val petTypeOptions = listOf("Cat", "Dog", "Bird", "Rabbit", "Other")
     val genderOptions = listOf("Female", "Male", "Unknown")
+
+    //form validation
+    var showValidationError by remember { mutableStateOf(false) }
+
+    val isNameValid = name.trim().isNotBlank()
+    val isPetTypeValid = petType.trim().isNotBlank()
+    val isGenderValid = petType.trim().isNotBlank()
+    val isColorValid = selectedColorHex.trim().isNotBlank()
+
+    val isFormValid = isNameValid && isPetTypeValid && isColorValid && isGenderValid
 
     Scaffold(
         topBar = {
@@ -683,12 +700,30 @@ fun AddPetScreen(
                 )
             }
 
+            if (showValidationError && !isFormValid) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = when {
+                        !isPetTypeValid -> "Please select a pet type"
+                        !isNameValid -> "Please enter pet's name"
+                        !isColorValid -> "Please select a pet theme color"
+                        else -> "Please complete required fields."
+                    },
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
             Spacer(modifier = Modifier.height(28.dp))
 
             // Save Pet Button
             Button(
                 onClick = {
-                    if (name.isNotBlank()) {
+                    if (!isFormValid) {
+                        showValidationError = true
+                        return@Button
+                    }
                         val newPet = Pet(
                             id = existingPet?.id ?: UUID.randomUUID().toString(),
                             userId = "",
@@ -708,9 +743,8 @@ fun AddPetScreen(
                             isSynced = false
                         )
                         onSavePet(newPet, selectedImageUri)
-                    }
                 },
-                enabled = name.isNotBlank(),
+                enabled = isFormValid,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = MintDarkGreen),
                 modifier = Modifier
@@ -975,38 +1009,44 @@ fun DetailedPetProfileCard(
 }
 
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun PetDetailScreen(
     pet: Pet,
-    latestWeightKg: Double? = 13.2,
-    upcomingAppointments: List<Pair<String, String>> = listOf(
-        "Annual Checkup" to "14 Aug 2026",
-        "Rabies Booster" to "28 Aug 2026"
-    ),
-    recentExpenseTotal: Double = 130.99,
+    weights: List<Weight> = emptyList(),
+    nextUpcomingEvent: CalendarEvents? = null,
     onBackClick: () -> Unit,
     onEditPetClick: () -> Unit,
     onFeatureClick: (route: String) -> Unit,
 ) {
+    val petThemeColor = pet.customColour.toComposeColor()
+    val imageSource = pet.remoteImageUrl ?: pet.localImagePath
+
+    val latestWeight = weights.lastOrNull()?.weightValue ?: 0.0
+
+    val configuration = LocalConfiguration.current
+    val dateFormatter = remember(configuration) {
+        SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Text(
-                        text = "${pet.name} 's Profile",
+                        text = "${pet.name}'s Profile",
                         fontWeight = FontWeight.Bold,
                         color = MintDarkGreen,
-                        fontSize = 22.sp
+                        fontSize = 20.sp
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
-                            Icons.Default.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back",
                             tint = MintDarkGreen,
-                            modifier = Modifier.size(50.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
                 },
@@ -1029,18 +1069,17 @@ fun PetDetailScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 20.dp)
-                .verticalScroll(rememberScrollState()),
-
-            ) {
+                .verticalScroll(rememberScrollState())
+        ) {
             Spacer(modifier = Modifier.height(12.dp))
-            // Profile Header
+
+            // Profile Header Card
             Card(
                 shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-
-                ) {
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
                 Column(modifier = Modifier.padding(20.dp)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -1053,12 +1092,23 @@ fun PetDetailScreen(
                                 .background(MintCardSurface),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.petnav),
-                                contentDescription = null,
-                                tint = MintDarkGreen,
-                                modifier = Modifier.size(40.dp)
-                            )
+                            if (!imageSource.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = imageSource,
+                                    contentDescription = pet.name,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.petnav),
+                                    contentDescription = null,
+                                    tint = MintDarkGreen,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
                         }
 
                         Column(modifier = Modifier.weight(1f)) {
@@ -1068,32 +1118,27 @@ fun PetDetailScreen(
                                 color = TextDark
                             )
                             Text(
-                                text = "${pet.petType} • ${pet.breed ?: "Unknown Breed"}",
+                                text = "${pet.petType} • ${pet.breed?.ifBlank { "Unknown Breed" }}",
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = TextMuted
                             )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                                Surface(
-                                    color = MintCardSurface,
-                                    shape = RoundedCornerShape(8.dp)
-                                ) {
-                                    Text(
-                                        text = if (pet.isNeutered) "Spayed/Neutered" else "Intact",
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MintDarkGreen,
-                                        modifier = Modifier.padding(
-                                            horizontal = 8.dp,
-                                            vertical = 2.dp
-                                        )
-                                    )
-                                }
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = petThemeColor.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Text(
+                                    text = if (pet.isNeutered) "Spayed / Neutered" else "Intact",
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = petThemeColor,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
 
                     Column(
                         modifier = Modifier
@@ -1107,175 +1152,147 @@ fun PetDetailScreen(
                     ) {
                         DetailInfoRow(
                             label = "Microchip ID",
-                            value = pet.microchipId ?: "Not micro-chipped"
+                            value = pet.microchipId?.ifBlank { null } ?: "Not Microchipped"
                         )
-                        DetailInfoRow(label = "User ID", value = pet.userId)
+                        DetailInfoRow(
+                            label = "Date of Birth",
+                            value = pet.dateOfBirth?.let { dateFormatter.format(Date(it)) } ?: "Not Specified"
+                        )
                     }
                 }
             }
-                Spacer(modifier = Modifier.height(20.dp))
-
-                // Quick Stats Grid
-                Text(
-                    text = "Quick Stats",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MintDarkGreen,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    // Weight Card
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Current Weight",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextMuted
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = if (latestWeightKg != null) "$latestWeightKg kg" else "N/A",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = MintDarkGreen
-                            )
-                        }
-                    }
-
-                    // Recent Expenses Card
-                    Card(
-                        shape = RoundedCornerShape(20.dp),
-                        colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
-                        modifier = Modifier
-                            .weight(1f)
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                "Recent Spending",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = TextMuted
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "R${"%.2f".format(recentExpenseTotal)}",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = MintDarkGreen
-                            )
-                        }
-                    }
-                }
 
             Spacer(modifier = Modifier.height(20.dp))
 
-                // Upcoming Appointments / Tasks Section
+            Text(
+                text = "Quick Stats",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MintDarkGreen,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                // Weight Card using real Weight DB entries
                 Card(
                     shape = RoundedCornerShape(20.dp),
                     colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Current Weight",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = TextMuted
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        val safeWeight = latestWeight ?: 0.0
+
+                        Text(
+                            text = if (safeWeight > 0.0) "$safeWeight kg" else "Not Tracked",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            color = MintDarkGreen
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Card(
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(containerColor = SurfaceWhite),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Next Upcoming Visit",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = MintDarkGreen,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (nextUpcomingEvent == null) {
+                        Text(
+                            text = "No upcoming events scheduled.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextMuted,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    } else {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = "Upcoming Care & Visits",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                color = MintDarkGreen,
-                                modifier = Modifier.padding(bottom = 12.dp)
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        if (upcomingAppointments.isEmpty()) {
-                            Text(
-                                text = "No upcoming visits scheduled.",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextMuted
-                            )
-                        } else {
-                            upcomingAppointments.forEach { (title, date) ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 6.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.DateRange,
-                                            contentDescription = null,
-                                            tint = MintDarkGreen,
-                                            modifier = Modifier.size(20.dp)
-                                        )
-                                        Text(
-                                            text = title,
-                                            style = MaterialTheme.typography.bodyMedium.copy(
-                                                fontWeight = FontWeight.SemiBold
-                                            ),
-                                            color = TextDark
-                                        )
-                                    }
-                                    Surface(
-                                        color = MintBackground,
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = date,
-                                            style = MaterialTheme.typography.labelSmall,
-                                            color = MintDarkGreen,
-                                            modifier = Modifier.padding(
-                                                horizontal = 8.dp,
-                                                vertical = 4.dp
-                                            )
-                                        )
-                                    }
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.DateRange,
+                                    contentDescription = null,
+                                    tint = MintDarkGreen,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = nextUpcomingEvent.title,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.SemiBold
+                                    ),
+                                    color = TextDark
+                                )
+                            }
+                            Surface(
+                                color = MintBackground,
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                nextUpcomingEvent.date?.let {
+                                    Text(
+                                        text = dateFormatter.format(it.toLocalDate()),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MintDarkGreen,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
                                 }
                             }
                         }
                     }
                 }
-            Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "Pet Features",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = MintDarkGreen,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
+            }
 
-                LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(240.dp)
-                ) {
-                    items(featureItemsList) { shortcut ->
+            Spacer(modifier = Modifier.height(20.dp))
+            Text(
+                text = "Pet Features",
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                color = MintDarkGreen,
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            FlowRow(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                maxItemsInEachRow = 2
+            ) {
+                featureItemsList.forEach { shortcut ->
+                    Box(modifier = Modifier.weight(1f)) {
                         FeatureShortcutCard(
                             shortcut = shortcut,
                             onClick = { onFeatureClick(shortcut.route) }
                         )
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
 
 @Composable
 fun DetailInfoRow(label: String, value: String) {

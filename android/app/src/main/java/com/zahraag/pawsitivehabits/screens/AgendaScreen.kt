@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.screens
 
 import android.R.attr.enabled
+import android.R.attr.onClick
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.BorderStroke
@@ -724,6 +725,12 @@ fun AddEditCalendarEventScreen(
     var isReminderDropdownExpanded by remember { mutableStateOf(false) }
     var showDatePicker by remember { mutableStateOf(false) }
 
+    var showValidationError by remember { mutableStateOf(false) }
+
+    val isPetSelected = selectedPetId.isNotBlank()
+    val isTitleValid = title.trim().isNotBlank()
+    val isFormValid = isPetSelected && isTitleValid
+
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
     val categories = remember {
@@ -803,6 +810,22 @@ fun AddEditCalendarEventScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+
+            if (showValidationError && !isFormValid) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = when {
+                        !isPetSelected -> "Please select a pet."
+                        !isTitleValid -> "Please enter an event title."
+                        else -> "Please fill in all required fields."
+                    },
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Pet Selection Dropdown
             Text("Pet", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
@@ -1033,6 +1056,10 @@ fun AddEditCalendarEventScreen(
             // Save Button
             Button(
                 onClick = {
+                    if (!isFormValid) {
+                        showValidationError = true
+                        return@Button
+                    }
                     val dateEpochMillis = selectedLocalDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
                     val nowMillis = System.currentTimeMillis()
                     val eventToSave = existingEvent?.copy(
@@ -1222,6 +1249,14 @@ fun AddRoutineScreen(
         )
     }
 
+    val isPetSelected = selectedPetId.isNotBlank()
+    val isCustomTextValid = selectedRoutineType != "Custom" || customRoutineText.trim().isNotBlank()
+    val isDaysSelected = selectedDays.isNotEmpty()
+
+    val isRoutineFormValid = isPetSelected && isCustomTextValid && isDaysSelected
+
+    var showRoutineValidationError by remember { mutableStateOf(false) }
+
     var showTimePicker by remember { mutableStateOf(false) }
     val timeFormatter = DateTimeFormatter.ofPattern("hh:mm a")
     var showStartDatePicker by remember { mutableStateOf(false) }
@@ -1253,6 +1288,22 @@ fun AddRoutineScreen(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
+
+            if (showRoutineValidationError && !isRoutineFormValid) {
+                Text(
+                    text = when {
+                        !isPetSelected -> "Please select a pet."
+                        !isCustomTextValid -> "Please enter a custom routine name"
+                        !isDaysSelected -> "Please select at least one day for a routine"
+                        else -> "Please complete all fields."
+                    },
+                    color = Color.Red,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(10.dp))
 
             //Pet Dropdown
             Text("Pet", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
@@ -1611,6 +1662,11 @@ fun AddRoutineScreen(
 
             Button(
                 onClick = {
+                    if (!isRoutineFormValid) {
+                        showRoutineValidationError = true
+                        return@Button
+                    }
+
                     val title = if (selectedRoutineType == "Custom") customRoutineText else selectedRoutineType
                     val timeAsLong = selectedTime
                         .atDate(LocalDate.now())

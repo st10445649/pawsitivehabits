@@ -2,11 +2,16 @@ package com.zahraag.pawsitivehabits.Navigation
 
 import android.os.Build
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -19,10 +24,8 @@ import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
-import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
-import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
@@ -41,15 +44,14 @@ import com.zahraag.pawsitivehabits.screens.PetDetailScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
-import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
+import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
 import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
-import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 import com.zahraag.pawsitivehabits.viewmodel.WeightViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -200,19 +202,37 @@ rootnavController = rootnavController
         composable(
             route = "pet_details/{petId}",
             arguments = listOf(navArgument("petId") { type = NavType.StringType })
-        ) { backStackEntry ->
+        ) {
+            backStackEntry ->
             val petId = backStackEntry.arguments?.getString("petId")
-            val selectedPet = samplePets.find { it.id == petId } ?: samplePets.first()
+            val petViewModel: PetViewModel = viewModel()
+            LaunchedEffect(petId) {
+                petViewModel.selectPet(petId)
+            }
 
-            PetDetailScreen(
-                pet = selectedPet,
-                onBackClick = { rootnavController.popBackStack() },
-                onEditPetClick = { /* Open edit dialog/screen */ },
-                onFeatureClick = { route ->
-                    // Pass petId alongside the feature route so the next screen filters by this pet
-                    rootnavController.navigate("$route/$petId")
+
+            val selectedPet by petViewModel.selectedPet.collectAsStateWithLifecycle()
+            val weightLogs by petViewModel.selectedPetWeightLogs.collectAsStateWithLifecycle()
+            val upcomingEvent by petViewModel.selectedPetUpcomingEvent.collectAsStateWithLifecycle()
+            val pet = selectedPet
+
+            if (pet != null) {
+                PetDetailScreen(
+                    pet = pet,
+                    weights = weightLogs,
+                    nextUpcomingEvent = upcomingEvent,
+                    onBackClick = { rootnavController.popBackStack() },
+                    onEditPetClick = { rootnavController.navigate("editPet/${pet.id}") },
+                    onFeatureClick = { route -> rootnavController.navigate(route) }
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MintDarkGreen)
                 }
-            )
+            }
         }
         composable(Screen.Agenda.route) {
 

@@ -1,9 +1,11 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
@@ -12,6 +14,10 @@ import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.UserRepository
+import com.zahraag.pawsitivehabits.ui.theme.MintBackground
+import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
+import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
+import com.zahraag.pawsitivehabits.ui.theme.MintPrimary
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -116,6 +122,7 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
 
         viewModelScope.launch {
             try {
+                // Fetch Pet Details
                 val pet = database.petDao().getPetsByUserId(currentUserId).firstOrNull()
                     ?.firstOrNull { it.id == petId }
                     ?: run {
@@ -123,73 +130,179 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                         return@launch
                     }
 
+                //Fetch Weight Records
                 val weights = database.weightDao().getWeightsForUser(currentUserId).firstOrNull()
                     ?.filter { it.petId == petId }
                     ?.sortedBy { it.date } ?: emptyList()
 
-                val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                // Fetch Routines for this Pet
+                val routines = database.routineDao().getRoutinesForPet(petId)
+                    .firstOrNull() ?: emptyList()
+
+                val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale.getDefault())
+
+                // Dimensions: A4
+                val pageWidth = 595
+                val pageHeight = 842
+                val leftMargin = 40f
+                val rightMargin = 555f
+                val topMargin = 50f
+                val bottomMargin = 50f
+                val printableWidth = rightMargin - leftMargin
 
                 val pdfDocument = PdfDocument()
-                val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4 @ 72dpi
+                var pageNumber = 1
+                var pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
                 var page = pdfDocument.startPage(pageInfo)
                 var canvas = page.canvas
 
-                val titlePaint = Paint().apply { textSize = 20f; isFakeBoldText = true }
-                val headingPaint = Paint().apply { textSize = 14f; isFakeBoldText = true }
-                val bodyPaint = Paint().apply { textSize = 12f }
+                // Paints
+                val headerPaint = Paint().apply { MintPrimary; style = Paint.Style.FILL }
+                val headerTitlePaint = Paint().apply { color = Color.WHITE; textSize = 22f; isFakeBoldText = true }
+                val headerSubPaint = Paint().apply { color = Color.WHITE; textSize = 11f }
 
-                val leftMargin = 40f
-                val lineHeight = 20f
-                val pageHeight = 842f
-                val bottomMargin = 40f
-                var y = 50f
+                val sectionHeaderPaint = Paint().apply { MintCardSurface; textSize = 14f; isFakeBoldText = true }
+                val labelPaint = Paint().apply { MintDarkGreen; textSize = 10f; isFakeBoldText = true }
+                val valuePaint = Paint().apply { MintPrimary; textSize = 11f }
+                val tableTextPaint = Paint().apply { MintDarkGreen; textSize = 10f }
 
-                fun newPageIfNeeded() {
-                    if (y > pageHeight - bottomMargin) {
+                val linePaint = Paint().apply { MintCardSurface; strokeWidth = 1f; style = Paint.Style.STROKE }
+                val zebraBgPaint = Paint().apply { MintBackground; style = Paint.Style.FILL }
+
+                var y = topMargin
+
+                fun drawPageHeader() {
+                    // Header Banner
+                    canvas.drawRect(0f, 0f, pageWidth.toFloat(), 70f, headerPaint)
+                    canvas.drawText("Pawsitive Habits", leftMargin, 35f, headerTitlePaint)
+                    canvas.drawText("Pet Care & Health Report • Generated ${dateFormat.format(Date())}", leftMargin, 54f, headerSubPaint)
+                    y = 90f
+                }
+
+                fun drawPageFooter() {
+                    canvas.drawText("Page $pageNumber", rightMargin - 40f, pageHeight - 20f, labelPaint)
+                    canvas.drawLine(leftMargin, pageHeight - 35f, rightMargin, pageHeight - 35f, linePaint)
+                }
+
+                fun checkNewPage(heightNeeded: Float) {
+                    if (y + heightNeeded > pageHeight - bottomMargin) {
+                        drawPageFooter()
                         pdfDocument.finishPage(page)
+
+                        pageNumber++
+                        pageInfo = PdfDocument.PageInfo.Builder(pageWidth, pageHeight, pageNumber).create()
                         page = pdfDocument.startPage(pageInfo)
                         canvas = page.canvas
-                        y = 50f
+
+                        drawPageHeader()
                     }
                 }
 
-                canvas.drawText("Pet Care Report - ${pet.name}", leftMargin, y, titlePaint)
-                y += lineHeight * 2
+                // Initial Header Setup
+                drawPageHeader()
 
-                canvas.drawText("Pet Details", leftMargin, y, headingPaint)
-                y += lineHeight
-                canvas.drawText("Name: ${pet.name}", leftMargin, y, bodyPaint); y += lineHeight
-                canvas.drawText("Species: ${pet.petType}", leftMargin, y, bodyPaint); y += lineHeight
-                canvas.drawText("Breed: ${pet.breed ?: "N/A"}", leftMargin, y, bodyPaint); y += lineHeight
-                canvas.drawText(
-                    "Date of Birth: ${dateFormat.format(Date(pet.dateOfBirth))}",
-                    leftMargin, y, bodyPaint
-                ); y += lineHeight
-                canvas.drawText("Microchip ID: ${pet.microchipId ?: "N/A"}", leftMargin, y, bodyPaint); y += lineHeight
-                canvas.drawText(
-                    "Neutered/Spayed: ${if (pet.isNeutered) "Yes" else "No"}",
-                    leftMargin, y, bodyPaint
+                // --- 1. PET DETAILS CARD ---
+                canvas.drawText("PET DETAILS", leftMargin, y, sectionHeaderPaint)
+                y += 8f
+                canvas.drawLine(leftMargin, y, rightMargin, y, linePaint)
+                y += 18f
+
+                val detailsGrid = listOf(
+                    "Name" to pet.name,
+                    "Species / Type" to pet.petType,
+                    "Breed" to (pet.breed?.ifBlank { "N/A" } ?: "N/A"),
+                    "Microchip ID" to (pet.microchipId?.ifBlank { "Not Microchipped" } ?: "Not Microchipped"),
+                    "Date of Birth" to (pet.dateOfBirth?.let { dateFormat.format(Date(it)) } ?: "Unknown"),
+                    "Spayed / Neutered" to if (pet.isNeutered) "Yes" else "No"
                 )
-                y += lineHeight * 2
 
-                newPageIfNeeded()
-                canvas.drawText("Weight History", leftMargin, y, headingPaint)
-                y += lineHeight
+                // Draw grid in 2 columns
+                val col1X = leftMargin
+                val col2X = leftMargin + (printableWidth / 2f)
+
+                detailsGrid.chunked(2).forEach { row ->
+                    checkNewPage(35f)
+
+                    // Column 1
+                    canvas.drawText(row[0].first.uppercase(), col1X, y, labelPaint)
+                    canvas.drawText(row[0].second, col1X, y + 14f, valuePaint)
+
+                    // Column 2
+                    if (row.size > 1) {
+                        canvas.drawText(row[1].first.uppercase(), col2X, y, labelPaint)
+                        canvas.drawText(row[1].second, col2X, y + 14f, valuePaint)
+                    }
+
+                    y += 32f
+                }
+
+                y += 15f
+
+                // Routines
+                checkNewPage(40f)
+                canvas.drawText("ACTIVE ROUTINES & CARE SCHEDULE", leftMargin, y, sectionHeaderPaint)
+                y += 8f
+                canvas.drawLine(leftMargin, y, rightMargin, y, linePaint)
+                y += 18f
+
+                if (routines.isEmpty()) {
+                    canvas.drawText("No active routines set up for ${pet.name}.", leftMargin, y, tableTextPaint)
+                    y += 25f
+                } else {
+                    // Table Header
+                    canvas.drawRect(leftMargin, y, rightMargin, y + 20f, zebraBgPaint)
+                    canvas.drawText("ROUTINE TITLE", leftMargin + 8f, y + 14f, labelPaint)
+                    canvas.drawText("FREQUENCY", leftMargin + 200f, y + 14f, labelPaint)
+                    canvas.drawText("NOTES / REPEAT", leftMargin + 350f, y + 14f, labelPaint)
+                    y += 24f
+
+                    routines.forEachIndexed { index, routine ->
+                        checkNewPage(22f)
+                        if (index % 2 == 1) {
+                            canvas.drawRect(leftMargin, y - 12f, rightMargin, y + 8f, zebraBgPaint)
+                        }
+
+                        canvas.drawText(routine.title, leftMargin + 8f, y, valuePaint)
+                        canvas.drawText(routine.frequency, leftMargin + 200f, y, tableTextPaint)
+                        canvas.drawText(routine.repeatDays ?: "Everyday", leftMargin + 350f, y, tableTextPaint)
+                        y += 20f
+                    }
+                    y += 15f
+                }
+
+                // weight history
+                checkNewPage(40f)
+                canvas.drawText("WEIGHT HISTORY LOGS", leftMargin, y, sectionHeaderPaint)
+                y += 8f
+                canvas.drawLine(leftMargin, y, rightMargin, y, linePaint)
+                y += 18f
 
                 if (weights.isEmpty()) {
-                    canvas.drawText("No weight records logged yet.", leftMargin, y, bodyPaint)
-                    y += lineHeight
+                    canvas.drawText("No weight entries recorded yet.", leftMargin, y, tableTextPaint)
+                    y += 25f
                 } else {
-                    weights.forEach { weight ->
-                        newPageIfNeeded()
-                        canvas.drawText(
-                            "${dateFormat.format(Date(weight.date))}   -   ${weight.weightValue} ${weight.unit}",
-                            leftMargin, y, bodyPaint
-                        )
-                        y += lineHeight
+                    // Table Header
+                    canvas.drawRect(leftMargin, y, rightMargin, y + 20f, zebraBgPaint)
+                    canvas.drawText("LOG DATE", leftMargin + 8f, y + 14f, labelPaint)
+                    canvas.drawText("RECORDED WEIGHT", leftMargin + 200f, y + 14f, labelPaint)
+                    y += 24f
+
+                    weights.forEachIndexed { index, weight ->
+                        checkNewPage(22f)
+                        if (index % 2 == 1) {
+                            canvas.drawRect(leftMargin, y - 12f, rightMargin, y + 8f, zebraBgPaint)
+                        }
+
+                        val dateStr = try { dateFormat.format(Date(weight.date)) } catch (_: Exception) { "N/A" }
+                        val weightStr = "${weight.weightValue} ${weight.unit}"
+
+                        canvas.drawText(dateStr, leftMargin + 8f, y, tableTextPaint)
+                        canvas.drawText(weightStr, leftMargin + 200f, y, valuePaint)
+                        y += 20f
                     }
                 }
 
+                drawPageFooter()
                 pdfDocument.finishPage(page)
 
                 context.contentResolver.openOutputStream(uri)?.use { outputStream ->
