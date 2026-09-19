@@ -24,6 +24,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
 import kotlin.collections.filter
 
 interface CalendarRepository {
@@ -37,7 +39,7 @@ interface CalendarRepository {
     suspend fun updateRoutine(routine: Routine)
     suspend fun deleteRoutine(routineId: String)
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
-    fun getRoutinesForPetAndDate(petId: String, dateEpochMillis: Long): Flow<List<RoutineItem>>
+    fun getRoutinesForPetAndDate(petId: String, date: LocalDate): Flow<List<RoutineItem>>
     fun getNextUpcomingEventForPet(petId: String, currentTimeMillis: Long): Flow<CalendarEvents?>
     suspend fun syncCalendarData(userId: String)
     suspend fun fetchRemoteRoutines(userId: String)
@@ -159,35 +161,35 @@ class CalendarRepositoryImpl(
 
     override fun getRoutinesForPetAndDate(
         petId: String,
-        dateEpochMillis: Long
+        targetLocalDate: LocalDate
     ): Flow<List<RoutineItem>> {
-        val targetLocalDate = Instant.ofEpochMilli(dateEpochMillis)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate()
 
-        val targetDayOfWeekName = targetLocalDate.dayOfWeek.name // "MONDAY", "TUESDAY", etc.
+        val targetDayAbbr = targetLocalDate.dayOfWeek
+            .getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+            .uppercase(Locale.ENGLISH)
+
         val targetEpochDay = targetLocalDate.toEpochDay()
+        val zoneId = ZoneId.systemDefault()
 
         return combine(
             routineDao.getRoutinesForPet(petId),
             logsDao.getLogsForDate(petId, targetLocalDate.toString())
-        ) { routines: List<Routine>, logs: List<RoutineLogs> ->
+        ) { routines, logs ->
+            Log.d("ROUTINES_DEBUG", "Fetched ${routines.size} raw routines from Room for petId=$petId")
             val completedRoutineIds = logs.filter { it.isCompleted }.map { it.routineId }.toSet()
 
             routines
                 .filter { routine ->
                     val startLocalDate = Instant.ofEpochMilli(routine.startDate)
-                        .atZone(ZoneId.systemDefault())
+                        .atZone(zoneId)
                         .toLocalDate()
                     val startEpochDay = startLocalDate.toEpochDay()
 
-                    // Check if routine started on or before target date
                     if (targetEpochDay < startEpochDay) return@filter false
 
-                    // Check if routine has ended (if endDate is specified)
                     routine.endDate?.let { endMillis ->
                         val endLocalDate = Instant.ofEpochMilli(endMillis)
-                            .atZone(ZoneId.systemDefault())
+                            .atZone(zoneId)
                             .toLocalDate()
                         if (targetEpochDay > endLocalDate.toEpochDay()) return@filter false
                     }
@@ -199,7 +201,8 @@ class CalendarRepositoryImpl(
                                 ?.split(",")
                                 ?.map { it.trim().uppercase() }
                                 ?: emptyList()
-                            activeDays.contains(targetDayOfWeekName)
+
+                            activeDays.contains(targetDayAbbr) || activeDays.contains(targetLocalDate.dayOfWeek.name)
                         }
                         "MONTHLY" -> {
                             targetLocalDate.dayOfMonth == startLocalDate.dayOfMonth
@@ -208,11 +211,10 @@ class CalendarRepositoryImpl(
                     }
                 }
                 .map { routine ->
-
                     val formattedTime = routine.time?.let { timeMillis ->
                         Instant.ofEpochMilli(timeMillis)
-                            .atZone(ZoneId.systemDefault())
-                            .format(DateTimeFormatter.ofPattern("hh:mm a"))
+                            .atZone(zoneId)
+                            .format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
                     } ?: "All Day"
 
                     RoutineItem(
@@ -224,9 +226,6 @@ class CalendarRepositoryImpl(
                 }
         }
     }
-
-
-
     override fun getNextUpcomingEventForPet(
         petId: String,
         currentTimeMillis: Long

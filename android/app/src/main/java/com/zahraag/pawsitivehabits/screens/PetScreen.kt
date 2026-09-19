@@ -861,7 +861,6 @@ fun DetailedPetProfileCard(
                     ) {
                         DropdownMenuItem(
                             text = { Text("View Full Stats") },
-                            leadingIcon = { Icon(Icons.Default.Visibility, contentDescription = null, tint = MintDarkGreen) },
                             onClick = {
                                 menuExpanded = false
                                 onViewDetails()
@@ -869,7 +868,6 @@ fun DetailedPetProfileCard(
                         )
                         DropdownMenuItem(
                             text = { Text("Edit Profile") },
-                            leadingIcon = { Icon(Icons.Default.Edit, contentDescription = null, tint = MintDarkGreen) },
                             onClick = {
                                 menuExpanded = false
                                 onEditClick()
@@ -943,67 +941,6 @@ fun DetailedPetProfileCard(
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // Quick Stats Badges
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Weight Pill
-                Surface(
-                    color = MintBackground,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.petnav), // Replace with a scale icon if available
-                            contentDescription = null,
-                            tint = MintDarkGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Column {
-                            Text("Weight", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                            Text(
-                                text = if (latestWeightKg != null) "$latestWeightKg kg" else "-- kg",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextDark
-                            )
-                        }
-                    }
-                }
-
-                // Upcoming Tasks Pill
-                Surface(
-                    color = MintBackground,
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.DateRange,
-                            contentDescription = null,
-                            tint = MintDarkGreen,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Column {
-                            Text("Upcoming", style = MaterialTheme.typography.labelSmall, color = TextMuted)
-                            Text(
-                                text = "$upcomingTaskCount Tasks",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                color = TextDark
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

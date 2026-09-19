@@ -2,6 +2,7 @@ package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -73,6 +75,13 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
             if (id.isEmpty()) flowOf(emptyList())
             else petRepository.getPetsForUser(id)
         }
+        .onEach { petList ->
+            if (_selectedPetId.value == null && petList.isNotEmpty()) {
+                _selectedPetId.value = petList.first().id
+            } else if (petList.isEmpty()) {
+                _selectedPetId.value = null
+            }
+        }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -91,18 +100,25 @@ class HomeViewModel(application: Application) : AndroidViewModel(application) {
                     _selectedPetId.value = null
                 }
             }
+                pets.onEach { petList ->
+                Log.d("PETS_DEBUG", "Loaded ${petList.size} pets: ${petList.map { "${it.name}: ${it.id}" }}")
+                if (_selectedPetId.value == null && petList.isNotEmpty()) {
+                    _selectedPetId.value = petList.first().id
+                }
+            }
         }
     }
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val routines: StateFlow<List<RoutineItem>> = _selectedPetId
         .flatMapLatest { petId ->
+            Log.d("ROUTINES_DEBUG", "Current Selected Pet ID: $petId")
             if (petId.isNullOrEmpty()) {
                 flowOf(emptyList())
             } else {
                 calendarRepository.getRoutinesForPetAndDate(
                     petId = petId,
-                    dateEpochMillis = getStartOfDayEpochMillis()
+                    targetLocalDate = LocalDate.now()
                 )
             }
         }

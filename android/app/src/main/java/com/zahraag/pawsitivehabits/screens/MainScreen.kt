@@ -138,7 +138,8 @@ fun MainScreen(rootnavController: NavHostController){
                     pets = pets,
                     selectedPetId = selectedPetId,
                     onSelectPet = { id -> homeViewModel.selectPet(id) },
-                    onNavigateToPetDetails = { },
+                    onNavigateToPetDetails = { petId ->
+                        rootnavController.navigate("pet_details/$petId")},
                     onNavigateToFeature = { featureRoute ->
                         rootnavController.navigate(featureRoute)
                     },
@@ -152,7 +153,7 @@ fun MainScreen(rootnavController: NavHostController){
                     },
                     userName = userName,
                     routines = routines,
-                    event = upcomingEvent?.title,
+                    event = upcomingEvent,
                     onToggleRoutine = { routineId, isCompleted ->
                         homeViewModel.toggleRoutine(routineId)
                     }
@@ -229,6 +230,7 @@ fun MainScreen(rootnavController: NavHostController){
 
             composable(BottomNavItem.Settings.route) {
                 val vm: UserViewModel = viewModel()
+                val coroutineScope = rememberCoroutineScope()
 
                 val uiState by vm.uiState.collectAsStateWithLifecycle()
 
@@ -247,16 +249,11 @@ fun MainScreen(rootnavController: NavHostController){
                         vm.exportPetData(petId, uri)
                     },
                     onLogout = {
-                        tokenManager.clear()
-                        FirebaseAuth.getInstance().signOut()
-                        WorkManager.getInstance(context).cancelAllWork()
-
-                        CoroutineScope(Dispatchers.IO).launch {
-                            AppDatabase.getDatabase(context).clearAllTables()
-                        }
-
-                        rootnavController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                        coroutineScope.launch {
+                            AuthRepository.logoutUser(context)
+                            rootnavController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     }
                 )

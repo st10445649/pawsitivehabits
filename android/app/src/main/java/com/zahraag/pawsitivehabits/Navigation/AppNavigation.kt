@@ -10,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -22,11 +23,13 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
+import com.zahraag.pawsitivehabits.BottomNavItem
 import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
 import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
 import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
 import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
@@ -44,6 +47,7 @@ import com.zahraag.pawsitivehabits.screens.PetDetailScreen
 import com.zahraag.pawsitivehabits.screens.PetScreen
 import com.zahraag.pawsitivehabits.screens.RegisterScreen
 import com.zahraag.pawsitivehabits.screens.Screen
+import com.zahraag.pawsitivehabits.screens.SettingsScreen
 import com.zahraag.pawsitivehabits.screens.WeightScreen
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
@@ -52,6 +56,7 @@ import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 import com.zahraag.pawsitivehabits.viewmodel.WeightViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -133,7 +138,7 @@ fun AppNavigation(
 
         composable("main") {
             MainScreen(
-rootnavController = rootnavController
+                rootnavController = rootnavController
             )
         }
 
@@ -175,7 +180,7 @@ rootnavController = rootnavController
                 },
                 userName = userName,
                 routines = routines,
-                event = upcomingEvent as String?,
+                event = upcomingEvent,
                 onToggleRoutine = { routineId, isCompleted ->
                     homeViewModel.toggleRoutine(routineId)
                 }
@@ -196,14 +201,13 @@ rootnavController = rootnavController
                 onBackClick = {
                     rootnavController.popBackStack()
                 }
-           )
+            )
         }
 
         composable(
             route = "pet_details/{petId}",
             arguments = listOf(navArgument("petId") { type = NavType.StringType })
-        ) {
-            backStackEntry ->
+        ) { backStackEntry ->
             val petId = backStackEntry.arguments?.getString("petId")
             val petViewModel: PetViewModel = viewModel()
             LaunchedEffect(petId) {
@@ -350,7 +354,7 @@ rootnavController = rootnavController
                     )
                 },
 
-               /* onDeleteEvent = { event ->
+                /* onDeleteEvent = { event ->
 
                     calendarVm.deleteCalendarEvent(event)
 
@@ -402,7 +406,7 @@ rootnavController = rootnavController
                                   repeatDays,
                                   startDate,
                                   endDate,
-                                  time->
+                                  time ->
 
                     routineVm.createOrUpdateRoutine(
                         routineToEdit = routineToEdit,
@@ -464,17 +468,18 @@ rootnavController = rootnavController
             ) { }
         }
 
-        composable(Screen.AddExpenses.route){
-            AddExpenseScreen(existingExpense =null,
-                petsMap= samplePetNamesMap,
-                currentUserId ="user123",
-                onNavigateBack= { rootnavController.popBackStack() },
-                onSaveExpense= {},
-                onDeleteExpense ={})
+        composable(Screen.AddExpenses.route) {
+            AddExpenseScreen(
+                existingExpense = null,
+                petsMap = samplePetNamesMap,
+                currentUserId = "user123",
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveExpense = {},
+                onDeleteExpense = {})
         }
 
 
-        composable(Screen.MedicalRecord.route){
+        composable(Screen.MedicalRecord.route) {
             MedicalRecordsScreen(
                 medicalList = sampleMedicalRecords,
                 petsMap = samplePetNamesMap,
@@ -484,7 +489,7 @@ rootnavController = rootnavController
             ) { }
         }
 
-        composable(Screen.AddMedicalRecord.route){
+        composable(Screen.AddMedicalRecord.route) {
             AddEditMedicalRecordScreen(
                 petsMap = samplePetNamesMap,
                 onNavigateBack = { rootnavController.popBackStack() },
@@ -494,11 +499,11 @@ rootnavController = rootnavController
             ) { }
         }
 
-        composable(Screen.Memories.route){
+        composable(Screen.Memories.route) {
             MemoriesScreen(
                 memoriesList = emptyList(),
                 petsMap = samplePetNamesMap,
-                currentUserId= "user123",
+                currentUserId = "user123",
                 onNavigateBack = { rootnavController.popBackStack() },
                 onSaveMemory = { rootnavController.navigate(Screen.Memories.route) }
             ) { }
@@ -513,5 +518,37 @@ rootnavController = rootnavController
             )
         }
 
+
+        composable(Screen.Settings.route) {
+            val vm: UserViewModel = viewModel()
+            val coroutineScope = rememberCoroutineScope()
+
+            val uiState by vm.uiState.collectAsStateWithLifecycle()
+
+            SettingsScreen(
+                uiState = uiState,
+                pets = uiState.pets,
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveSettings = { updatedSettings ->
+                    vm.saveSettings(updatedSettings)
+                },
+                onSyncDataClick = {
+                    vm.syncAllData()
+                    vm.loadUserData()
+                },
+                onExportDataClick = { petId, uri ->
+                    vm.exportPetData(petId, uri)
+                },
+                onLogout = {
+                    coroutineScope.launch {
+                        AuthRepository.logoutUser(context)
+                        rootnavController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            )
+
+        }
     }
 }
