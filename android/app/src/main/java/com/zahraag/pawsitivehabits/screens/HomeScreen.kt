@@ -10,9 +10,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.ExitToApp
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Pets
 import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,6 +25,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
@@ -42,7 +45,7 @@ fun HomeScreen(
     pets: List<Pet>,
     selectedPetId: String?,
     routines: List<RoutineItem>,
-    event:String?,
+    event: String?,
     onToggleRoutine: (String, Boolean) -> Unit,
     onSelectPet: (String) -> Unit,
     onNavigateToPetDetails: (String) -> Unit,
@@ -65,6 +68,7 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
+            // --- HEADER ROW ---
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -83,73 +87,86 @@ fun HomeScreen(
                     )
                 }
 
-                if (activePet != null) {
-                    Surface(
-                        color = SurfaceWhite,
-                        shape = RoundedCornerShape(16.dp),
-                        modifier = Modifier.clickable { onNavigateToPetDetails(activePet.id) }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (activePet != null) {
+                        Surface(
+                            color = SurfaceWhite,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.clickable { onNavigateToPetDetails(activePet.id) }
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape)
-                                    .background(MintCardSurface),
-                                contentAlignment = Alignment.Center
+                            Row(
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.petnav),
-                                    contentDescription = null,
-                                    tint = MintDarkGreen,
-                                    modifier = Modifier.size(20.dp)
+                                Box(
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape)
+                                        .background(MintCardSurface),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.petnav),
+                                        contentDescription = "Pet Details",
+                                        tint = MintDarkGreen,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+                                Text(
+                                    text = activePet.name,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextDark,
+                                    fontSize = 14.sp
                                 )
                             }
-                            Text(
-                                text = activePet.name,
-                                fontWeight = FontWeight.Bold,
-                                color = TextDark,
-                                fontSize = 14.sp
-                            )
                         }
                     }
-                }
-                IconButton(
-                    onClick = onLogout,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(SurfaceWhite, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ExitToApp,
-                        contentDescription = "Logout",
-                        tint = MintDarkGreen
-                    )
+
+                    IconButton(
+                        onClick = onLogout,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(SurfaceWhite, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ExitToApp,
+                            contentDescription = "Logout",
+                            tint = MintDarkGreen
+                        )
+                    }
                 }
             }
 
             if (pets.isNotEmpty()) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    items(pets) { pet ->
-                        val isSelected = pet.id == selectedPetId
-                        FilterChip(
-                            selected = isSelected,
-                            onClick = { onSelectPet(pet.id) },
-                            label = { Text(pet.name) },
-                            colors = FilterChipDefaults.filterChipColors(
-                                selectedContainerColor = MintDarkGreen,
-                                selectedLabelColor = SurfaceWhite,
-                                containerColor = SurfaceWhite,
-                                labelColor = TextDark
-                            ),
-                            shape = RoundedCornerShape(50)
-                        )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    LazyRow(
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        items(pets) { pet ->
+                            val isSelected = pet.id == selectedPetId
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = { onSelectPet(pet.id) },
+                                label = { Text(pet.name) },
+                                leadingIcon = {
+                                    Icon(
+                                        imageVector = Icons.Default.Pets,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp),
+                                        tint = if (isSelected) SurfaceWhite else MintDarkGreen
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MintDarkGreen,
+                                    selectedLabelColor = SurfaceWhite,
+                                    containerColor = SurfaceWhite,
+                                    labelColor = TextDark
+                                ),
+                                shape = RoundedCornerShape(50)
+                            )
+                        }
                     }
                 }
             }
@@ -157,7 +174,9 @@ fun HomeScreen(
             Card(
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface),
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigateToFeature("agenda") }
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -172,7 +191,7 @@ fun HomeScreen(
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Default.DateRange,
-                                contentDescription = null,
+                                contentDescription = "Upcoming Event",
                                 tint = MintDarkGreen,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -185,36 +204,52 @@ fun HomeScreen(
                             color = MintDarkGreen.copy(alpha = 0.8f)
                         )
                         Text(
-                            text = "${activePet?.name ?: "Pet"} ${event ?: "Event"}",
+                            text = if (!event.isNullOrEmpty()) {
+                                "${activePet?.name ?: "Pet"}: $event"
+                            } else {
+                                "No upcoming events scheduled"
+                            },
                             style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
-                            color = MintDarkGreen
-                        )
-                        Text(
-                            text = "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextMuted
+                            color = MintDarkGreen,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                        contentDescription = "View Calendar",
+                        tint = MintDarkGreen,
+                        modifier = Modifier.size(20.dp)
+                    )
                 }
             }
 
-             val completedCount = routines.count { it.isCompleted }
+            val completedCount = routines.count { it.isCompleted }
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Today's Routines",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                    color = TextDark
-                )
-                Text(
-                    text = "$completedCount of ${routines.size} done",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MintPrimary
-                )
+                Column {
+                    Text(
+                        text = "Today's Routines",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = TextDark
+                    )
+                    Text(
+                        text = "$completedCount of ${routines.size} done",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MintPrimary
+                    )
+                }
+                TextButton(onClick = { onNavigateToFeature("routines") }) {
+                    Text(
+                        text = "Manage Routines",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
+                        color = MintDarkGreen
+                    )
+                }
             }
 
             Card(
@@ -231,7 +266,8 @@ fun HomeScreen(
                         Text(
                             text = "No routines scheduled for today.",
                             color = TextMuted,
-                            fontSize = 14.sp
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(vertical = 8.dp)
                         )
                     } else {
                         routines.forEach { routine ->
@@ -239,17 +275,24 @@ fun HomeScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(12.dp))
-                                    .clickable { onToggleRoutine(routine.id, !routine.isCompleted) }
-                                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                                    .background(MintBackground.copy(alpha = 0.3f))
+                                    .clickable { onNavigateToFeature("routine_detail/${routine.id}") }
+                                    .padding(vertical = 10.dp, horizontal = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                Icon(
-                                    imageVector = if (routine.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.Circle,
-                                    contentDescription = null,
-                                    tint = if (routine.isCompleted) MintDarkGreen else TextMuted,
-                                    modifier = Modifier.size(24.dp)
-                                )
+
+                                IconButton(
+                                    onClick = { onToggleRoutine(routine.id, !routine.isCompleted) },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = if (routine.isCompleted) Icons.Default.CheckCircle else Icons.Outlined.Circle,
+                                        contentDescription = "Toggle Complete",
+                                        tint = if (routine.isCompleted) MintDarkGreen else TextMuted,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                }
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = routine.title,
@@ -259,11 +302,13 @@ fun HomeScreen(
                                         ),
                                         color = if (routine.isCompleted) TextMuted else TextDark
                                     )
-                                    Text(
-                                        text = routine.time,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = TextMuted
-                                    )
+                                    if (routine.time.isNotEmpty()) {
+                                        Text(
+                                            text = routine.time,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = TextMuted
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -271,7 +316,7 @@ fun HomeScreen(
                 }
             }
 
-               Text(
+            Text(
                 text = "Quick Actions",
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                 color = TextDark

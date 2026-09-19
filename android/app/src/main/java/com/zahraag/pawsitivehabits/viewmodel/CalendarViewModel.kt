@@ -48,7 +48,6 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     private val petRepository = PetRepository(database.petDao(), apiService, context)
 
     private val tokenManager = TokenManager(context)
-    val userId: String = tokenManager.getUserId() ?: ""
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
 

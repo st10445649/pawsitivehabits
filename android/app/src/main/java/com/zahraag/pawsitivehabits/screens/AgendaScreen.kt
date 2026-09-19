@@ -362,12 +362,22 @@ fun CalendarView(
     val itemsByDate : Map<LocalDate, List<AgendaDisplayItem>> = remember(
         routines, events) {
         val map = mutableMapOf<LocalDate, MutableList<AgendaDisplayItem>>()
+
         routines.forEach { routine ->
-            val date = routine.startDate.toLocalDate()
-            map.getOrPut(date){mutableListOf()}.add(AgendaDisplayItem.RoutineItem(routine))}
+            val date = Instant.ofEpochMilli(routine.startDate)
+                .atZone(ZoneId.systemDefault())
+                .toLocalDate()
+            map.getOrPut(date) { mutableListOf() }.add(AgendaDisplayItem.RoutineItem(routine))
+        }
+
         events.forEach { event ->
-            val date = (event.time ?: System.currentTimeMillis()).toLocalDate()
-            map.getOrPut(date){mutableListOf()}.add(AgendaDisplayItem.EventItem(event))
+            val eventMillis = event.date ?: event.time
+            if (eventMillis != null) {
+                val eventLocalDate = Instant.ofEpochMilli(eventMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate()
+                map.getOrPut(eventLocalDate) { mutableListOf() }.add(AgendaDisplayItem.EventItem(event))
+            }
         }
         map
     }

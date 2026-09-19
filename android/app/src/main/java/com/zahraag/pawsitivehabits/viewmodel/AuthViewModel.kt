@@ -1,10 +1,14 @@
 package com.zahraag.pawsitivehabits.viewmodel
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.auth.FirebaseAuth
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.User
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

@@ -33,7 +33,7 @@ interface ApiService {
     ): Response<AuthResponse>
 
     @GET("auth/profile")
-    suspend fun getUserProfile(): Response<UserProfileDto>
+    suspend fun getUserProfile(): Response<ProfileResponseDto>
 
     // User Settings Operations
     @GET("auth/settings")
@@ -102,10 +102,6 @@ interface ApiService {
 
     @POST("weights")
     suspend fun createWeight(@Body weight: Weight): Response<Weight>
-
-    @PUT("weights/{id}")
-    suspend fun updateWeight(@Path("id") weightId: String, @Body weight: Weight): Response<Weight>
-
     @DELETE("weights/{id}")
     suspend fun deleteWeight(@Path("id") weightId: String): Response<Unit>
 
@@ -114,21 +110,30 @@ interface ApiService {
 data class GoogleAuthRequest(
     val idToken: String
 )
-data class UserDataWrapper(
-    val user: UserDto
+
+data class ProfileResponseDto(
+    val status: String,
+    val data: UserDataWrapper
 )
 
-data class UserDto(
+data class UserDataWrapper(
+    val user: UserProfileDto
+)
+
+
+data class UserProfileDto(
     @SerializedName("_id") val id: String,
     @SerializedName("googleId") val firebaseUid: String? = null,
     val email: String,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val displayName: String,
-    @SerializedName("picture") val photoURL: String? = null,
+    val firstName: String?,
+    val lastName: String?,
+    val displayName: String?,
+    val photoURL: String?,
     val authProvider: String
-)
-
+) {
+    val name: String
+        get() = displayName ?: "$firstName $lastName".trim()
+}
 data class PetResponse(
     val status: String,
     val data: PetData?
@@ -169,11 +174,5 @@ data class ApiResponse<T>(
     val status: String,
     val data: T? = null,
     val message: String? = null
-)
-
-data class UserProfileDto(
-    val id: String,
-    val name: String?,
-    val email: String?
 )
 

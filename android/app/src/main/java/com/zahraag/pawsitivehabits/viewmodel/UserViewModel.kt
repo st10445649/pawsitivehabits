@@ -39,49 +39,60 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         context = context
     )
 
-    private val _uiState = MutableStateFlow(UserUiState())
-    val uiState: StateFlow<UserUiState> = _uiState.asStateFlow()
+    private val _userName = MutableStateFlow("Pet Parent")
+    private val _userEmail = MutableStateFlow("")
+    private val _isLoading = MutableStateFlow(false)
+    private val _errorMessage = MutableStateFlow<String?>(null)
+
+    private val userId: String
+        get() = tokenManager.getUserId() ?: ""
+
+    val uiState: StateFlow<UserUiState> = combine(
+        userRepository.getUserSettings(userId),
+        database.petDao().getPetsByUserId(userId),
+        _userName,
+        _userEmail,
+        _isLoading,
+        _errorMessage
+    ) { args ->
+        @Suppress("UNCHECKED_CAST")
+        UserUiState(
+            settings = (args[0] as? UserSettings) ?: UserSettings(userId = userId),
+            pets = args[1] as List<Pet>,
+            userName = args[2] as String,
+            userEmail = args[3] as String,
+            isLoading = args[4] as Boolean,
+            errorMessage = args[5] as? String
+        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = UserUiState(isLoading = true)
+    )
 
     init {
         loadUserData()
     }
 
     fun loadUserData() {
-        val userId = tokenManager.getUserId() ?: return
+        if (userId.isEmpty()) return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _isLoading.value = true
 
-            launch {
-                userRepository.getUserSettings(userId).collect { settings ->
-                    _uiState.update { current ->
-                        current.copy(
-                            settings = settings ?: UserSettings(userId = userId),
-                            isLoading = false
-                        )
-                    }
-                }
-            }
-
-            launch {
-                database.petDao().getPetsByUserId(userId).collect { pets ->
-                    _uiState.update { current -> current.copy(pets = pets) }
-                }
-            }
-
+            // Fetch non-persistent user details from the backend API
             val profileResult = userRepository.fetchUserProfile()
             profileResult.onSuccess { profile ->
-                _uiState.update { current ->
-                    current.copy(
-                        userName = profile.name ?: "Pet Parent",
-                        userEmail = profile.email ?: ""
-                    )
-                }
+                _userName.value = profile.name ?: "Pet Parent"
+                _userEmail.value = profile.email ?: ""
             }.onFailure { error ->
-                _uiState.update { it.copy(errorMessage = error.message) }
+                _errorMessage.value = error.message
             }
 
+            // Sync Room-stored UserSettings from the backend API
             userRepository.syncUserSettings()
+
+            _isLoading.value = false
         }
     }
 
@@ -91,25 +102,30 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /**
-     * Exports a single pet's details + weight history to a PDF at the given Uri
-     * (obtained from an ActivityResultContracts.CreateDocument("application/pdf") launcher).
-     */
+    fun syncAllData() {
+        viewModelScope.launch {
+            // Trigger offline worker sync and reload API user profile + settings
+            userRepository.triggerImmediateDataSync()
+            loadUserData()
+        }
+    }
+
     fun exportPetData(petId: String, uri: Uri) {
-        val userId = tokenManager.getUserId() ?: return
+        val currentUserId = userId
+        if (currentUserId.isEmpty()) return
 
         viewModelScope.launch {
             try {
-                val pet = database.petDao().getPetsByUserId(userId).first()
-                    .firstOrNull { it.id == petId }
+                val pet = database.petDao().getPetsByUserId(currentUserId).firstOrNull()
+                    ?.firstOrNull { it.id == petId }
                     ?: run {
-                        _uiState.update { it.copy(errorMessage = "Pet not found") }
+                        _errorMessage.value = "Pet not found"
                         return@launch
                     }
 
-                val weights = database.weightDao().getWeightsForUser(userId).first()
-                    .filter { it.petId == petId }
-                    .sortedBy { it.date }
+                val weights = database.weightDao().getWeightsForUser(currentUserId).firstOrNull()
+                    ?.filter { it.petId == petId }
+                    ?.sortedBy { it.date } ?: emptyList()
 
                 val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
@@ -181,15 +197,15 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 pdfDocument.close()
 
-                _uiState.update { it.copy(errorMessage = null) }
+                _errorMessage.value = null
             } catch (e: Exception) {
-                _uiState.update { it.copy(errorMessage = "Export failed: ${e.message}") }
+                _errorMessage.value = "Export failed: ${e.message}"
             }
         }
     }
 
     fun updateWeightUnit(newUnit: String) {
-        val currentSettings = _uiState.value.settings ?: return
+        val currentSettings = uiState.value.settings ?: return
         if (currentSettings.weightUnit == newUnit) return
 
         viewModelScope.launch {
@@ -198,15 +214,11 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun toggleNotifications(enabled: Boolean) {
-        val currentSettings = _uiState.value.settings ?: return
+        val currentSettings = uiState.value.settings ?: return
         val updated = currentSettings.copy(notificationsEnabled = enabled)
 
         viewModelScope.launch {
             userRepository.updateSettings(updated)
         }
-    }
-
-    fun syncAllData() {
-        userRepository.triggerImmediateDataSync()
     }
 }

@@ -20,7 +20,7 @@ data class User(
     var lastName: String,
     var email: String,
     var password: String,
-    var displayName: String = "",
+    var displayName: String? = "",
     var photoURL: String = "",
     var authProvider: String = "email"
 )

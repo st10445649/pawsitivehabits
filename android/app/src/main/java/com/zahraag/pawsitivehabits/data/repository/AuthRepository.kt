@@ -8,6 +8,7 @@ import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.User
 import com.zahraag.pawsitivehabits.data.remote.GoogleAuthRequest
 import com.zahraag.pawsitivehabits.data.remote.LoginRequest
@@ -15,7 +16,9 @@ import com.zahraag.pawsitivehabits.data.remote.RegisterRequest
 import com.zahraag.pawsitivehabits.data.remote.RetrofitClient
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.helpers.OfflineSyncWorker
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 object AuthRepository {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -152,5 +155,20 @@ object AuthRepository {
             syncWorkRequest
         )
     }
+
+    suspend fun logoutUser(context: Context) {
+        withContext(Dispatchers.IO) {
+            // 1. Cancel WorkManager syncs
+            WorkManager.getInstance(context).cancelAllWork()
+
+            // 2. Clear Auth Tokens
+            TokenManager(context).clear()
+            FirebaseAuth.getInstance().signOut()
+
+            // 3. Completely clear Room DB synchronously on I/O thread
+            AppDatabase.getDatabase(context).clearAllTables()
+        }
+    }
+
 }
 

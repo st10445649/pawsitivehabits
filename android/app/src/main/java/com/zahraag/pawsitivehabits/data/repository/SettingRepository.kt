@@ -23,7 +23,8 @@ class UserRepository(
         return try {
             val response = apiService.getUserProfile()
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val userProfile = response.body()!!.data.user
+                Result.success(userProfile)
             } else {
                 Result.failure(Exception("Failed to load profile (${response.code()})"))
             }
@@ -90,6 +91,26 @@ class UserRepository(
             ExistingWorkPolicy.REPLACE,
             syncWorkRequest
         )
+    }
+
+    suspend fun fetchAndCacheUserProfile(): Result<UserProfileDto> {
+        return try {
+            val response = apiService.getUserProfile()
+            if (response.isSuccessful && response.body() != null) {
+                val userProfile = response.body()!!.data.user
+
+
+                // Sync settings simultaneously
+                syncUserSettings()
+                Result.success(userProfile)
+
+            } else {
+                Result.failure(Exception("Failed to fetch profile: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Log.e("USER_REPO", "Error fetching user profile", e)
+            Result.failure(e)
+        }
     }
 
     private fun scheduleSyncWorker() {

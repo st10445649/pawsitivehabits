@@ -39,6 +39,10 @@ interface CalendarRepository {
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
     fun getRoutinesForPetAndDate(petId: String, dateEpochMillis: Long): Flow<List<RoutineItem>>
     fun getNextUpcomingEventForPet(petId: String, currentTimeMillis: Long): Flow<CalendarEvents?>
+    suspend fun syncCalendarData(userId: String)
+    suspend fun fetchRemoteRoutines(userId: String)
+    suspend fun fetchRemoteCalendarEvents(userId: String)
+    suspend fun fetchRemoteRoutineLogs(userId: String)
 }
 
 class CalendarRepositoryImpl(
@@ -69,24 +73,11 @@ class CalendarRepositoryImpl(
         return logsDao.getLogsForDateRange(startOfDay, endOfDay)
     }
 
-     suspend fun syncCalendarData(userId: String) {
+     override suspend fun syncCalendarData(userId: String) {
         try {
-            val eventsResp = apiService.getCalendarEvents()
-            if (eventsResp.isSuccessful && eventsResp.body() != null) {
-                val syncedEvents = eventsResp.body()!!.map { it.copy(isSynced = true) }
-                eventsDao.syncRemoteEvents(userId, syncedEvents)
-            }
-
-            val routinesResp = apiService.getRoutines()
-            if (routinesResp.isSuccessful && routinesResp.body() != null) {
-                val syncedRoutines = routinesResp.body()!!.map { it.copy(isSynced = true) }
-                routineDao.syncRemoteRoutines(userId, syncedRoutines)
-            }
-
-            val logsResp = apiService.getRoutineLogs()
-            if (logsResp.isSuccessful && logsResp.body() != null) {
-                logsDao.syncRemoteLogs(userId,logsResp.body()!!)
-            }
+            fetchRemoteCalendarEvents(userId)
+            fetchRemoteRoutines(userId)
+            fetchRemoteRoutineLogs(userId)
         } catch (e: Exception) {
             Log.e("SYNC_ERR", "Offline mode active: ${e.message}")
         }
@@ -97,7 +88,7 @@ class CalendarRepositoryImpl(
         eventsDao.insertEvent(localEvent)//add to room
         try {
             val response = apiService.createCalendarEvent(localEvent)
-            if (!response.isSuccessful&& response.body() != null) {
+            if (response.isSuccessful&& response.body() != null) {
                 val remoteEvent = response.body()!!
                 eventsDao.insertEvent(remoteEvent.copy(isSynced = true))
             } else {
@@ -262,7 +253,7 @@ class CalendarRepositoryImpl(
         }
     }
 
-    suspend fun fetchRemoteRoutines(userId: String) {
+    override suspend fun fetchRemoteRoutines(userId: String) {
         try {
             val response = apiService.getRoutines()
             if (response.isSuccessful) {
@@ -281,7 +272,7 @@ class CalendarRepositoryImpl(
         }
     }
 
-    suspend fun fetchRemoteCalendarEvents(userId: String) {
+    override suspend fun fetchRemoteCalendarEvents(userId: String) {
         try {
             val response = apiService.getCalendarEvents()
             if (response.isSuccessful) {
@@ -300,7 +291,7 @@ class CalendarRepositoryImpl(
         }
     }
 
-    suspend fun fetchRemoteRoutineLogs(userId: String) {
+    override suspend fun fetchRemoteRoutineLogs(userId: String) {
         try {
             val userRoutineIds = routineDao.getRoutineIdsForUser(userId).toSet()
 
@@ -308,7 +299,6 @@ class CalendarRepositoryImpl(
             if (response.isSuccessful) {
                 response.body()?.let { remoteLogs ->
                     val syncedLogs = remoteLogs
-
                         .filter { log -> userRoutineIds.contains(log.routineId) }
                         .map { log -> log.copy(isSynced = true) }
 
@@ -336,7 +326,7 @@ class CalendarRepositoryImpl(
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             "CalendarSyncWorker",
-            ExistingWorkPolicy.KEEP,
+            ExistingWorkPolicy.REPLACE,
             syncWorkRequest
         )
     }

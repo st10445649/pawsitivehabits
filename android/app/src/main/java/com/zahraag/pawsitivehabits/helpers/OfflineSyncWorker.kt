@@ -26,6 +26,8 @@ class OfflineSyncWorker(
         val calendarDao = database.calendarDao()
         val routineDao = database.routineDao()
         val routineLogsDao = database.routineLogsDao()
+        val userDao = database.userDao()
+        val weightDao = database.weightDao()
 
         val apiService = RetrofitClient.getApiService(applicationContext)
         val supabase = SupabaseClientProvider.client
@@ -104,6 +106,13 @@ class OfflineSyncWorker(
                 val logsResp = apiService.getRoutineLogs()
                 if (logsResp.isSuccessful && logsResp.body() != null) {
                     routineLogsDao.syncRemoteLogs(userId, logsResp.body()!!)
+                } else {
+                    Log.e("SYNC_WORKER", "Logs pull failed: ${logsResp.code()}")
+                }
+
+                val weightResp = apiService.getWeights()
+                if (weightResp.isSuccessful && weightResp.body() != null) {
+                    weightDao.syncRemoteWeights(userId, weightResp.body()!!)
                 } else {
                     Log.e("SYNC_WORKER", "Logs pull failed: ${logsResp.code()}")
                 }

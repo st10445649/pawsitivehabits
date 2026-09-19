@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -32,6 +33,7 @@ import com.zahraag.pawsitivehabits.data.SampleData.samplePets
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
@@ -39,6 +41,7 @@ import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,44 +125,34 @@ fun MainScreen(rootnavController: NavHostController){
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Home.route) {
-
                 val homeViewModel: HomeViewModel = viewModel()
 
                 val pets by homeViewModel.pets.collectAsStateWithLifecycle()
                 val selectedPetId by homeViewModel.selectedPetId.collectAsStateWithLifecycle()
-                val context = LocalContext.current
-
                 val userName by homeViewModel.userName.collectAsStateWithLifecycle()
                 val routines by homeViewModel.routines.collectAsStateWithLifecycle()
                 val upcomingEvent by homeViewModel.upcomingEvent.collectAsStateWithLifecycle()
+                val coroutineScope = rememberCoroutineScope()
 
                 HomeScreen(
                     pets = pets,
                     selectedPetId = selectedPetId,
-                    onSelectPet = { id ->
-                        homeViewModel.selectPet(id)
-                    },
-                    onNavigateToPetDetails = {
-                    },
+                    onSelectPet = { id -> homeViewModel.selectPet(id) },
+                    onNavigateToPetDetails = { },
                     onNavigateToFeature = { featureRoute ->
                         rootnavController.navigate(featureRoute)
                     },
                     onLogout = {
-                        tokenManager.clear()
-                        FirebaseAuth.getInstance().signOut()
-                        WorkManager.getInstance(context).cancelAllWork()
-
-                        CoroutineScope(Dispatchers.IO).launch {
-                            AppDatabase.getDatabase(context).clearAllTables()
-                        }
-
-                        rootnavController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                        coroutineScope.launch {
+                            AuthRepository.logoutUser(context)
+                            rootnavController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
                     },
                     userName = userName,
                     routines = routines,
-                    event = upcomingEvent as String?,
+                    event = upcomingEvent?.title,
                     onToggleRoutine = { routineId, isCompleted ->
                         homeViewModel.toggleRoutine(routineId)
                     }

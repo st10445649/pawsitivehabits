@@ -80,7 +80,7 @@ class TokenManager(context: Context) {
 
     fun clear() {
         customJwt=null
-        prefs.edit().remove(KEY_JWT_TOKEN).apply()
+        prefs.edit().clear().apply()
     }
 
     private fun extractUserIdFromToken(token: String): String? {
