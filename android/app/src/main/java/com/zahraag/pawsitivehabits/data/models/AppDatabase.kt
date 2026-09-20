@@ -8,10 +8,12 @@ import com.zahraag.pawsitivehabits.data.dao.CalendarEventsDao
 import com.zahraag.pawsitivehabits.data.dao.PetDao
 import com.zahraag.pawsitivehabits.data.dao.RoutineDao
 import com.zahraag.pawsitivehabits.data.dao.RoutineLogsDao
+import com.zahraag.pawsitivehabits.data.dao.UserDao
+import com.zahraag.pawsitivehabits.data.dao.WeightDao
 
 @Database(
-    entities = [Pet::class, CalendarEvents::class, Routine::class, RoutineLogs::class],
-    version = 8,
+    entities = [Pet::class, CalendarEvents::class, Routine::class, RoutineLogs::class, Weight::class, UserSettings::class],
+    version = 11,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -20,6 +22,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun calendarDao(): CalendarEventsDao
     abstract fun routineDao(): RoutineDao
     abstract fun routineLogsDao(): RoutineLogsDao
+    abstract fun weightDao(): WeightDao
+    abstract fun userDao(): UserDao
 
     companion object {
         @Volatile

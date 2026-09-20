@@ -15,10 +15,18 @@ import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.RoutineLogs
 import com.zahraag.pawsitivehabits.data.remote.ApiService
 import com.zahraag.pawsitivehabits.helpers.OfflineSyncWorker
+import com.zahraag.pawsitivehabits.screens.RoutineItem
+import kotlinx.coroutines.NonCancellable.isCompleted
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.util.Locale
+import kotlin.collections.filter
 
 interface CalendarRepository {
     fun getEventsForDate(userId: String, date: LocalDate): Flow<List<CalendarEvents>>
@@ -28,7 +36,15 @@ interface CalendarRepository {
     suspend fun insertEvent(event: CalendarEvents)
     suspend fun deleteEvent(eventId: String)
     suspend fun insertRoutine(routine: Routine)
+    suspend fun updateRoutine(routine: Routine)
+    suspend fun deleteRoutine(routineId: String)
     suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate)
+    fun getRoutinesForPetAndDate(petId: String, date: LocalDate): Flow<List<RoutineItem>>
+    fun getNextUpcomingEventForPet(petId: String, currentTimeMillis: Long): Flow<CalendarEvents?>
+    suspend fun syncCalendarData(userId: String)
+    suspend fun fetchRemoteRoutines(userId: String)
+    suspend fun fetchRemoteCalendarEvents(userId: String)
+    suspend fun fetchRemoteRoutineLogs(userId: String)
 }
 
 class CalendarRepositoryImpl(
@@ -59,24 +75,11 @@ class CalendarRepositoryImpl(
         return logsDao.getLogsForDateRange(startOfDay, endOfDay)
     }
 
-     suspend fun syncCalendarData(userId: String) {
+     override suspend fun syncCalendarData(userId: String) {
         try {
-            val eventsResp = apiService.getCalendarEvents()
-            if (eventsResp.isSuccessful && eventsResp.body() != null) {
-                val syncedEvents = eventsResp.body()!!.map { it.copy(isSynced = true) }
-                eventsDao.syncRemoteEvents(userId, syncedEvents)
-            }
-
-            val routinesResp = apiService.getRoutines()
-            if (routinesResp.isSuccessful && routinesResp.body() != null) {
-                val syncedRoutines = routinesResp.body()!!.map { it.copy(isSynced = true) }
-                routineDao.syncRemoteRoutines(userId, syncedRoutines)
-            }
-
-            val logsResp = apiService.getRoutineLogs()
-            if (logsResp.isSuccessful && logsResp.body() != null) {
-                logsDao.syncRemoteLogs(userId,logsResp.body()!!)
-            }
+            fetchRemoteCalendarEvents(userId)
+            fetchRemoteRoutines(userId)
+            fetchRemoteRoutineLogs(userId)
         } catch (e: Exception) {
             Log.e("SYNC_ERR", "Offline mode active: ${e.message}")
         }
@@ -84,10 +87,10 @@ class CalendarRepositoryImpl(
 
     override suspend fun insertEvent(event: CalendarEvents) {
         val localEvent = event.copy(isSynced = false)
-        eventsDao.insertEvent(localEvent)
+        eventsDao.insertEvent(localEvent)//add to room
         try {
             val response = apiService.createCalendarEvent(localEvent)
-            if (!response.isSuccessful&& response.body() != null) {
+            if (response.isSuccessful&& response.body() != null) {
                 val remoteEvent = response.body()!!
                 eventsDao.insertEvent(remoteEvent.copy(isSynced = true))
             } else {
@@ -128,12 +131,116 @@ class CalendarRepositoryImpl(
         }
     }
 
+    override suspend fun updateRoutine(routine: Routine) {
+        val localRoutine = routine.copy(isSynced = false)
+        routineDao.insertRoutine(localRoutine)
+        try {
+            val response = apiService.createRoutine(localRoutine)
+            if (response.isSuccessful && response.body() != null) {
+                val remoteRoutine = response.body()!!
+                routineDao.insertRoutine(remoteRoutine.copy(isSynced = true))
+            } else {
+                scheduleSyncWorker(routine.userId)
+            }
+        } catch (e: Exception) {
+            Log.e("API_ERR", "Failed to sync updateRoutine, enqueueing worker: ${e.message}")
+            scheduleSyncWorker(routine.userId)
+        }
+    }
+
+    override suspend fun deleteRoutine(routineId: String) {
+        routineDao.deleteRoutineById(routineId)
+        try {
+            val response = apiService.deleteRoutine(routineId)
+            if (!response.isSuccessful) scheduleSyncWorker()
+        } catch (e: Exception) {
+            Log.e("API_ERR", "Failed to sync deleteRoutine, enqueueing worker: ${e.message}")
+            scheduleSyncWorker()
+        }
+    }
+
+    override fun getRoutinesForPetAndDate(
+        petId: String,
+        targetLocalDate: LocalDate
+    ): Flow<List<RoutineItem>> {
+
+        val targetDayAbbr = targetLocalDate.dayOfWeek
+            .getDisplayName(TextStyle.SHORT, Locale.ENGLISH)
+            .uppercase(Locale.ENGLISH)
+
+        val targetEpochDay = targetLocalDate.toEpochDay()
+        val zoneId = ZoneId.systemDefault()
+
+        return combine(
+            routineDao.getRoutinesForPet(petId),
+            logsDao.getLogsForDate(petId, targetLocalDate.toString())
+        ) { routines, logs ->
+            Log.d("ROUTINES_DEBUG", "Fetched ${routines.size} raw routines from Room for petId=$petId")
+            val completedRoutineIds = logs.filter { it.isCompleted }.map { it.routineId }.toSet()
+
+            routines
+                .filter { routine ->
+                    val startLocalDate = Instant.ofEpochMilli(routine.startDate)
+                        .atZone(zoneId)
+                        .toLocalDate()
+                    val startEpochDay = startLocalDate.toEpochDay()
+
+                    if (targetEpochDay < startEpochDay) return@filter false
+
+                    routine.endDate?.let { endMillis ->
+                        val endLocalDate = Instant.ofEpochMilli(endMillis)
+                            .atZone(zoneId)
+                            .toLocalDate()
+                        if (targetEpochDay > endLocalDate.toEpochDay()) return@filter false
+                    }
+
+                    when (routine.frequency.uppercase()) {
+                        "DAILY" -> true
+                        "WEEKLY" -> {
+                            val activeDays = routine.repeatDays
+                                ?.split(",")
+                                ?.map { it.trim().uppercase() }
+                                ?: emptyList()
+
+                            activeDays.contains(targetDayAbbr) || activeDays.contains(targetLocalDate.dayOfWeek.name)
+                        }
+                        "MONTHLY" -> {
+                            targetLocalDate.dayOfMonth == startLocalDate.dayOfMonth
+                        }
+                        else -> true
+                    }
+                }
+                .map { routine ->
+                    val formattedTime = routine.time?.let { timeMillis ->
+                        Instant.ofEpochMilli(timeMillis)
+                            .atZone(zoneId)
+                            .format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
+                    } ?: "All Day"
+
+                    RoutineItem(
+                        id = routine.id,
+                        title = routine.title,
+                        time = formattedTime,
+                        isCompleted = completedRoutineIds.contains(routine.id)
+                    )
+                }
+        }
+    }
+    override fun getNextUpcomingEventForPet(
+        petId: String,
+        currentTimeMillis: Long
+    ): Flow<CalendarEvents?> {
+        return eventsDao.getNextUpcomingEventForPet(petId, currentTimeMillis)
+    }
+
     override suspend fun toggleRoutineCompletion(routineId: String, petId: String, date: LocalDate) {
         val log = RoutineLogs(
             routineId = routineId,
             petId = petId,
             completedAt = date.atTime(LocalTime.now()).atZone(ZoneId.systemDefault()).toInstant()
-                .toEpochMilli()
+                .toEpochMilli(),
+            isCompleted = true,
+            date = date.toString()
         )
         logsDao.insertLog(log)
         try {
@@ -142,6 +249,63 @@ class CalendarRepositoryImpl(
         } catch (e: Exception) {
             Log.e("API_ERR", "Failed to sync routine completion, enqueueing worker: ${e.message}")
             scheduleSyncWorker()
+        }
+    }
+
+    override suspend fun fetchRemoteRoutines(userId: String) {
+        try {
+            val response = apiService.getRoutines()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteRoutines ->
+                    val syncedRoutines = remoteRoutines.map { routine ->
+                        routine.copy(
+                            userId = if (routine.userId.isBlank()) userId else routine.userId,
+                            isSynced = true
+                        )
+                    }
+                    routineDao.insertRoutines(syncedRoutines)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("ROUTINE_REPO", "Failed to fetch remote routines: ${e.message}")
+        }
+    }
+
+    override suspend fun fetchRemoteCalendarEvents(userId: String) {
+        try {
+            val response = apiService.getCalendarEvents()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteEvents ->
+                    val syncedEvents = remoteEvents.map { event ->
+                        event.copy(
+                            userId = if (event.userId.isBlank()) userId else event.userId,
+                            isSynced = true
+                        )
+                    }
+                    eventsDao.insertEvents(syncedEvents)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("CALENDAR_REPO", "Failed to fetch remote calendar events: ${e.message}")
+        }
+    }
+
+    override suspend fun fetchRemoteRoutineLogs(userId: String) {
+        try {
+            val userRoutineIds = routineDao.getRoutineIdsForUser(userId).toSet()
+
+            val response = apiService.getRoutineLogs()
+            if (response.isSuccessful) {
+                response.body()?.let { remoteLogs ->
+                    val syncedLogs = remoteLogs
+                        .filter { log -> userRoutineIds.contains(log.routineId) }
+                        .map { log -> log.copy(isSynced = true) }
+
+                    logsDao.insertLogs(syncedLogs)
+                }
+            }
+        } catch (e: Exception) {
+            Log.w("LOGS_REPO", "Failed to fetch remote routine logs: ${e.message}")
         }
     }
 
@@ -161,7 +325,7 @@ class CalendarRepositoryImpl(
 
         WorkManager.getInstance(context).enqueueUniqueWork(
             "CalendarSyncWorker",
-            ExistingWorkPolicy.KEEP,
+            ExistingWorkPolicy.REPLACE,
             syncWorkRequest
         )
     }

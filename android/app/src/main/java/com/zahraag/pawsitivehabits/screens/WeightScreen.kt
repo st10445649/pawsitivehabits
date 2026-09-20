@@ -1,6 +1,5 @@
 package com.zahraag.pawsitivehabits.screens
 
-import android.graphics.drawable.shapes.Shape
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,20 +20,26 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -44,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,30 +66,35 @@ import com.patrykandpatrick.vico.core.cartesian.data.CartesianChartModelProducer
 import com.patrykandpatrick.vico.core.cartesian.data.lineSeries
 import com.patrykandpatrick.vico.core.cartesian.layer.LineCartesianLayer
 import com.patrykandpatrick.vico.compose.common.fill
+import com.patrykandpatrick.vico.core.common.shape.CorneredShape
 import com.zahraag.pawsitivehabits.data.models.Weight
 import com.zahraag.pawsitivehabits.toEpochMilli
-import com.zahraag.pawsitivehabits.toLocalDate
 import com.zahraag.pawsitivehabits.ui.theme.MintBackground
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.ui.theme.MintMediumGreen
 import com.zahraag.pawsitivehabits.ui.theme.SurfaceWhite
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
+import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.collections.filter
 
 @Composable
 fun WeightScreen(
-    petsMap: Map<String, String> = mapOf("pet1" to "Cat", "pet2" to "Dog"),
-    weightList: List<Weight> = emptyList(),
+    petsMap: Map<String, String>,
+    weightList: List<Weight>,
+    weightUnit: String = "kg",
     currentUserId: String = "user123",
     onNavigateBack: () -> Unit,
-    onSaveWeight: (Weight) -> Unit
+    onSaveWeight: (Weight) -> Unit,
+    onDeleteWeight: (Weight) -> Unit
 ) {
     var selectedPetId by remember { mutableStateOf(petsMap.keys.firstOrNull() ?: "") }
     var isPetDropdownExpanded by remember { mutableStateOf(false) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val petWeights = weightList.filter { it.petId == selectedPetId }.sortedByDescending { it.date }
     val currentWeight = petWeights.firstOrNull()?.weightValue ?: 0.0
@@ -149,6 +160,23 @@ fun WeightScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            errorMessage?.let { error ->
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
+                ) {
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier.padding(12.dp),
+                        fontSize = 14.sp
+                    )
+                }
+            }
+
             // Pet Dropdown Selector
             Box {
                 Card(
@@ -197,12 +225,12 @@ fun WeightScreen(
             ) {
                 StatCard(
                     title = "Current Weight",
-                    value = "%.2f kg".format(currentWeight),
+                    value = "${"%.2f".format(currentWeight)} $weightUnit",
                     modifier = Modifier.weight(1f)
                 )
                 StatCard(
                     title = "Weight Range",
-                    value = "%.2f - %.2f kg".format(minWeight, maxWeight),
+                    value = "%.2f - %.2f $weightUnit".format(minWeight, maxWeight),
                     modifier = Modifier.weight(1f)
                 )
             }
@@ -227,6 +255,7 @@ fun WeightScreen(
                                 pointProvider = LineCartesianLayer.PointProvider.single(
                                     point = LineCartesianLayer.Point(
                                         component = rememberShapeComponent(
+                                            shape = CorneredShape.Pill,
                                             fill = fill(MintDarkGreen)
                                         ),
                                         sizeDp = 8f
@@ -258,7 +287,12 @@ fun WeightScreen(
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 IconButton(
-                    onClick = { showAddDialog = true },
+                    onClick = { if (selectedPetId.isEmpty()) {
+                        errorMessage = "Please select a pet first"
+                    } else {
+                        errorMessage = null
+                        showAddDialog = true
+                    } },
                     modifier = Modifier
                         .size(32.dp)
                         .clip(CircleShape)
@@ -285,7 +319,11 @@ fun WeightScreen(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(petWeights) { weightItem ->
-                            WeightHistoryRow(weight = weightItem)
+                            WeightHistoryRow(
+                                weight = weightItem,
+                                unit = weightUnit,
+                                onDelete = onDeleteWeight
+                            )
                         }
                     }
                 }
@@ -294,13 +332,14 @@ fun WeightScreen(
 
         if (showAddDialog) {
             AddWeightDialog(
+                weightUnit = weightUnit,
                 onDismiss = { showAddDialog = false },
                 onAdd = { value, date ->
                     val newWeight = Weight(
                         userId = currentUserId,
                         petId = selectedPetId,
                         weightValue = value,
-                        unit = "kg",
+                        unit = weightUnit,
                         date = date.toEpochMilli()
                     )
                     onSaveWeight(newWeight)
@@ -327,26 +366,43 @@ fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun WeightHistoryRow(weight: Weight) {
+fun WeightHistoryRow(weight: Weight, unit: String,onDelete: (Weight) -> Unit) {
     val dateFormatter = DateTimeFormatter.ofPattern("MM/dd/yyyy")
-    val dateStr = weight.date.toLocalDate().format(dateFormatter)
+    val dateStr = Instant.ofEpochMilli(weight.date)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+        .format(dateFormatter)
 
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp)
     ) {
-        Text(
-            text = "%.2f %s".format(weight.weightValue, weight.unit),
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = MintDarkGreen
-        )
-        Text(
-            text = dateStr,
-            fontSize = 13.sp,
-            color = MintDarkGreen.copy(alpha = 0.6f)
-        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "%.2f %s".format(weight.weightValue,unit),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MintDarkGreen
+                )
+                Text(
+                    text = dateStr,
+                    fontSize = 13.sp,
+                    color = MintDarkGreen.copy(alpha = 0.6f)
+                )
+            }
+            IconButton(onClick = { onDelete(weight) }) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete Weight",
+                    tint = Color.White.copy(alpha = 0.8f)
+                )
+            }
+        }
         Spacer(modifier = Modifier.height(8.dp))
         HorizontalDivider(color = MintDarkGreen.copy(alpha = 0.15f))
     }
@@ -354,12 +410,43 @@ fun WeightHistoryRow(weight: Weight) {
 
 @Composable
 fun AddWeightDialog(
+    weightUnit: String,
     onDismiss: () -> Unit,
     onAdd: (Double, LocalDate) -> Unit
 ) {
     var weightInput by remember { mutableStateOf("") }
-    var selectedDate by remember { mutableStateOf(LocalDate.now()) }
-    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    var inputError by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = System.currentTimeMillis()
+    )
+
+    val selectedDateText = remember(datePickerState.selectedDateMillis) {
+        val millis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+        Instant.ofEpochMilli(millis)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+            .format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+    }
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("OK", color = MintDarkGreen)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel", color = MintDarkGreen)
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -370,12 +457,14 @@ fun AddWeightDialog(
             Column(
                 modifier = Modifier.padding(20.dp)
             ) {
-                Text("Weight", fontWeight = FontWeight.Bold, color = MintDarkGreen, fontSize = 16.sp)
+                Text("Weight ($weightUnit)", fontWeight = FontWeight.Bold, color = MintDarkGreen, fontSize = 16.sp)
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = weightInput,
                     onValueChange = { weightInput = it },
-                    placeholder = { Text("0.0 kg", color = MintDarkGreen.copy(alpha = 0.4f)) },
+                    placeholder = { Text("0.0 ($weightUnit)", color = MintDarkGreen.copy(alpha = 0.4f))},
+                    isError = inputError != null,
+                    supportingText = { inputError?.let { Text(it, color = MaterialTheme.colorScheme.error) } },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MintDarkGreen,
@@ -393,13 +482,13 @@ fun AddWeightDialog(
                 Card(
                     shape = RoundedCornerShape(12.dp),
                     colors = CardDefaults.cardColors(containerColor = MintCardSurface),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth().clickable { showDatePicker = true }
                 ) {
                     Row(
                         modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(selectedDate.format(dateFormatter), color = MintDarkGreen, fontWeight = FontWeight.SemiBold)
+                        Text(selectedDateText, color = MintDarkGreen, fontWeight = FontWeight.SemiBold)
                         Spacer(modifier = Modifier.weight(1f))
                         Icon(Icons.Default.DateRange, contentDescription = null, tint = MintDarkGreen)
                     }
@@ -418,8 +507,17 @@ fun AddWeightDialog(
 
                     Button(
                         onClick = {
-                            val value = weightInput.toDoubleOrNull() ?: 0.0
-                            onAdd(value, selectedDate)
+                            val value = weightInput.toDoubleOrNull()
+                            if (value == null || value <= 0.0) {
+                                inputError = "Please enter a valid weight."
+                            } else {
+                                val epochMillis = datePickerState.selectedDateMillis ?: System.currentTimeMillis()
+                                val selectedLocalDate = Instant.ofEpochMilli(epochMillis)
+                                    .atZone(ZoneId.of("UTC"))
+                                    .toLocalDate()
+
+                                onAdd(value, selectedLocalDate)
+                            }
                         },
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MintMediumGreen),

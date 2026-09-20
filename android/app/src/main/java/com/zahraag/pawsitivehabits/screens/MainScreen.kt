@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -25,17 +26,23 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.work.WorkManager
 import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.BottomNavItem
-import com.zahraag.pawsitivehabits.data.SampleData.sampleCalendarEvents
-import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
 import com.zahraag.pawsitivehabits.data.SampleData.samplePets
-import com.zahraag.pawsitivehabits.data.SampleData.sampleRoutines
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
 import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
 import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
+import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
+import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -118,22 +125,37 @@ fun MainScreen(rootnavController: NavHostController){
             modifier = Modifier.padding(paddingValues)
         ) {
             composable(Screen.Home.route) {
+                val homeViewModel: HomeViewModel = viewModel()
+
+                val pets by homeViewModel.pets.collectAsStateWithLifecycle()
+                val selectedPetId by homeViewModel.selectedPetId.collectAsStateWithLifecycle()
+                val userName by homeViewModel.userName.collectAsStateWithLifecycle()
+                val routines by homeViewModel.routines.collectAsStateWithLifecycle()
+                val upcomingEvent by homeViewModel.upcomingEvent.collectAsStateWithLifecycle()
+                val coroutineScope = rememberCoroutineScope()
+
                 HomeScreen(
-                    pets= samplePets,
-                    selectedPetId= samplePets.first().id,
-                    onSelectPet={ id -> samplePets.first().id},
+                    pets = pets,
+                    selectedPetId = selectedPetId,
+                    onSelectPet = { id -> homeViewModel.selectPet(id) },
                     onNavigateToPetDetails = { petId ->
-                        rootnavController.navigate("pet_details/$petId")
-                    },
-                    onNavigateToFeature = {
+                        rootnavController.navigate("pet_details/$petId")},
+                    onNavigateToFeature = { featureRoute ->
+                        rootnavController.navigate(featureRoute)
                     },
                     onLogout = {
-                        tokenManager.clear()
-                        FirebaseAuth.getInstance().signOut()
-
-                        rootnavController.navigate(Screen.Login.route) {
-                            popUpTo(0) { inclusive = true }
+                        coroutineScope.launch {
+                            AuthRepository.logoutUser(context)
+                            rootnavController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
                         }
+                    },
+                    userName = userName,
+                    routines = routines,
+                    event = upcomingEvent,
+                    onToggleRoutine = { routineId, isCompleted ->
+                        homeViewModel.toggleRoutine(routineId)
                     }
                 )
             }
@@ -166,9 +188,40 @@ fun MainScreen(rootnavController: NavHostController){
                     onDateSelected = vm::onDateSelected,
                     onDeleteCalendarEvent = vm::deleteCalendarEvent,
                     onNavigateBack = { rootnavController.popBackStack() },
-                    onNavigateToAddRoutine = { rootnavController.navigate(Screen.AddRoutine.route) },
-                    onNavigateToAddCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) },
-                    onNavigateToEditCalendarEvent = { rootnavController.navigate(Screen.AddCalendarEvent.route) }
+                    onDeleteRoutine = { routine -> vm.deleteRoutine(routine) },
+                    onNavigateToAddRoutine = {
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.remove<String>("routineToEditId")
+
+                        rootnavController.navigate(Screen.AddRoutine.route)
+                    },
+                    onNavigateToEditRoutine = { routine ->
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("routineToEditId", routine.id)
+
+                        rootnavController.navigate(Screen.AddRoutine.route)
+                    },
+                    onNavigateToAddCalendarEvent = {
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.remove<String>("eventToEditId")
+
+                        rootnavController.navigate(Screen.AddCalendarEvent.route)
+                    },
+
+                    onNavigateToEditCalendarEvent = { event ->
+                        rootnavController
+                            .currentBackStackEntry
+                            ?.savedStateHandle
+                            ?.set("eventToEditId", event.id)
+
+                        rootnavController.navigate(Screen.AddCalendarEvent.route)
+                    }
                 )
             }
             composable(BottomNavItem.Features.route) {
@@ -176,14 +229,34 @@ fun MainScreen(rootnavController: NavHostController){
             }
 
             composable(BottomNavItem.Settings.route) {
+                val vm: UserViewModel = viewModel()
+                val coroutineScope = rememberCoroutineScope()
+
+                val uiState by vm.uiState.collectAsStateWithLifecycle()
+
                 SettingsScreen(
-                    userSettings = UserSettings(id = "user123"),
-                    userName = "John Doe",
-                    userEmail = "johndoe@gmail.com",
+                    uiState = uiState,
+                    pets = uiState.pets,
                     onNavigateBack = { rootnavController.popBackStack() },
-                    onSaveSettings = { },
-                    onSyncDataClick = { }
-                ) { }
+                    onSaveSettings = { updatedSettings ->
+                        vm.saveSettings(updatedSettings)
+                    },
+                    onSyncDataClick = {
+                        vm.syncAllData()
+                        vm.loadUserData()
+                    },
+                    onExportDataClick = { petId, uri ->
+                        vm.exportPetData(petId, uri)
+                    },
+                    onLogout = {
+                        coroutineScope.launch {
+                            AuthRepository.logoutUser(context)
+                            rootnavController.navigate(Screen.Login.route) {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
+                    }
+                )
             }
 
         }

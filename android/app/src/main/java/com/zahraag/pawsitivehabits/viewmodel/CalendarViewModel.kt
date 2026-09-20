@@ -29,6 +29,8 @@ data class AgendaUiState(
     val routines: List<Routine> = emptyList(),
     val calendarEvents: List<CalendarEvents> = emptyList(),
     val petNamesMap: Map<String, String> = emptyMap(),
+
+    val petColorMap: Map<String, String> = emptyMap(),
     val isLoading: Boolean = false
 )
 class CalendarViewModel(application: Application) : AndroidViewModel(application) {
@@ -46,7 +48,6 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     private val petRepository = PetRepository(database.petDao(), apiService, context)
 
     private val tokenManager = TokenManager(context)
-    val userId: String = tokenManager.getUserId() ?: ""
 
     private val _selectedDate = MutableStateFlow(LocalDate.now())
 
@@ -65,6 +66,7 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
                     routines = routines,
                     calendarEvents = events,
                     petNamesMap = pets.associate { it.id to it.name },
+                    petColorMap = pets.associate { it.id to (it.customColour ?: "#FF5733") },
                     selectedDate = selectedDate,
                     isLoading = false
                 )
@@ -121,6 +123,15 @@ class CalendarViewModel(application: Application) : AndroidViewModel(application
     fun onRoutineToggled(routineId: String, petId: String) {
         viewModelScope.launch {
             calendarRepository.toggleRoutineCompletion(routineId, petId, _selectedDate.value)
+        }
+    }
+
+    fun deleteRoutine(routine: Routine) {
+        viewModelScope.launch {
+            Log.d("Routine_VM", "Deleting routine ID: ${routine.id}")
+            calendarRepository.deleteRoutine(
+                routine.id
+            )
         }
     }
 }

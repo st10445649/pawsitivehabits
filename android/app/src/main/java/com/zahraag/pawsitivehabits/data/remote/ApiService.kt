@@ -5,6 +5,8 @@ import com.zahraag.pawsitivehabits.data.models.CalendarEvents
 import com.zahraag.pawsitivehabits.data.models.Pet
 import com.zahraag.pawsitivehabits.data.models.Routine
 import com.zahraag.pawsitivehabits.data.models.RoutineLogs
+import com.zahraag.pawsitivehabits.data.models.UserSettings
+import com.zahraag.pawsitivehabits.data.models.Weight
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.DELETE
@@ -29,6 +31,18 @@ interface ApiService {
     suspend fun syncGoogleUser(
         @Body request: GoogleAuthRequest
     ): Response<AuthResponse>
+
+    @GET("auth/profile")
+    suspend fun getUserProfile(): Response<ProfileResponseDto>
+
+    // User Settings Operations
+    @GET("auth/settings")
+    suspend fun getUserSettings(): Response<ApiResponse<UserSettings>>
+
+    @PUT("auth/settings")
+    suspend fun updateUserSettings(
+        @Body settings: UserSettings
+    ): Response<UserSettings>
 
     // pet operations
     @GET("pets")
@@ -77,26 +91,49 @@ interface ApiService {
 
     @POST("routines/logs")
     suspend fun logRoutineCompletion(@Body log: RoutineLogs): Response<RoutineLogs>
+
+
+    // weight operations
+    @GET("weights")
+    suspend fun getWeights(): Response<List<Weight>>
+
+    @GET("weights/pet/{petId}")
+    suspend fun getWeightsByPet(@Path("petId") petId: String): Response<List<Weight>>
+
+    @POST("weights")
+    suspend fun createWeight(@Body weight: Weight): Response<Weight>
+    @DELETE("weights/{id}")
+    suspend fun deleteWeight(@Path("id") weightId: String): Response<Unit>
+
 }
 
 data class GoogleAuthRequest(
     val idToken: String
 )
-data class UserDataWrapper(
-    val user: UserDto
+
+data class ProfileResponseDto(
+    val status: String,
+    val data: UserDataWrapper
 )
 
-data class UserDto(
+data class UserDataWrapper(
+    val user: UserProfileDto
+)
+
+
+data class UserProfileDto(
     @SerializedName("_id") val id: String,
     @SerializedName("googleId") val firebaseUid: String? = null,
     val email: String,
-    val firstName: String? = null,
-    val lastName: String? = null,
-    val displayName: String,
-    @SerializedName("picture") val photoURL: String? = null,
+    val firstName: String?,
+    val lastName: String?,
+    val displayName: String?,
+    val photoURL: String?,
     val authProvider: String
-)
-
+) {
+    val name: String
+        get() = displayName ?: "$firstName $lastName".trim()
+}
 data class PetResponse(
     val status: String,
     val data: PetData?
@@ -125,3 +162,17 @@ data class AuthResponse(
     val data: UserDataWrapper? = null,
     val message: String? = null
 )
+
+
+data class UserRequest(
+    val status: String,
+    val token: String? = null,
+    val message: String? = null
+)
+
+data class ApiResponse<T>(
+    val status: String,
+    val data: T? = null,
+    val message: String? = null
+)
+
