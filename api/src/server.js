@@ -15,7 +15,7 @@ const startServer = async() => {
     try{
         await connectDB();
 
-app.listen(PORT, ()=>
+app.listen(PORT,'0.0.0.0', ()=>
 {
     console.log(
               `${APP_NAME} is running securely on http://localhost:${PORT}`
@@ -24,7 +24,7 @@ app.listen(PORT, ()=>
 }catch(error){
 
     //if mongodb can't be reached
-    console.error("ParkSmart should not start.")
+    console.error("Pawsitive Habits should not start.")
 
     console.error(error.message);
 

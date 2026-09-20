@@ -7,7 +7,7 @@ app.use(express.json());
 const authRoutes = require("./routes/authRoutes");
 const petRoutes = require("./routes/petRoutes");
 const calendarRoutes = require("./routes/calendarRoutes")
-
+const weightRoutes = require("./routes/weightRoutes")
 app.get('/api/test', (req, res) => {
   res.status(200).json({
     status: 'success',
@@ -19,5 +19,5 @@ app.get('/api/test', (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/pets", petRoutes)
 app.use("/", calendarRoutes)
-
+app.use("/weights", weightRoutes)
 module.exports = app;

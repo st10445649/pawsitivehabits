@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+const UserSettings = require('../models/userSettings');
 const admin = require('../config/firebaseAdmin');
 const { User } = require('../models/User');
 const jwt = require('jsonwebtoken');
@@ -81,6 +83,16 @@ exports.registerUser = async (req, res) => {
         authProvider: 'password'
       });
 
+      // Automatically create default UserSettings for the new user
+      try {
+        await UserSettings.create({
+          _id: new mongoose.Types.ObjectId().toString(),
+          userId: user._id
+        });
+      } catch (settingsError) {
+        console.error('Could not create default settings:', settingsError.message);
+      }
+
       const token = signToken(user._id); 
     
     res.status(200).json({
@@ -144,5 +156,54 @@ exports.getCurrentUserProfile = async (req, res) => {
       status: 'error',
       message: error.message
     });
+  }
+};
+
+//get the logged-in user's settings (creates defaults if none exist yet)
+exports.getUserSettings = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
+
+    let settings = await UserSettings.findOne({ userId: req.user._id });
+
+    if (!settings) {
+      settings = await UserSettings.create({
+        _id: new mongoose.Types.ObjectId().toString(),
+        userId: req.user._id
+      });
+    }
+
+    res.status(200).json({ status: 'success', data: settings });
+  } catch (error) {
+    res.status(500).json({ status: 'error', message: error.message });
+  }
+};
+
+//update the logged-in user's settings
+exports.updateUserSettings = async (req, res) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ status: 'fail', message: 'Unauthorized' });
+    }
+
+    const { language, weightUnit, notificationsEnabled, biometricLockEnabled } = req.body;
+
+    const settings = await UserSettings.findOneAndUpdate(
+      { userId: req.user._id },
+      {
+        $set: { language, weightUnit, notificationsEnabled, biometricLockEnabled },
+        $setOnInsert: {
+          _id: new mongoose.Types.ObjectId().toString(),
+          userId: req.user._id
+        }
+      },
+      { new: true, upsert: true, runValidators: true }
+    );
+
+    res.status(200).json(settings);
+  } catch (error) {
+    res.status(400).json({ status: 'fail', message: error.message });
   }
 };
