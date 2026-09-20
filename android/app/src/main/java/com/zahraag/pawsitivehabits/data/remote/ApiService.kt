@@ -176,3 +176,7 @@ data class ApiResponse<T>(
     val message: String? = null
 )
 
+data class ApiErrorResponse(
+    @SerializedName("message")
+    val message: String? = null
+)

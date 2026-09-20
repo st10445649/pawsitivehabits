@@ -53,33 +53,20 @@ class TokenManager(context: Context) {
         Context.MODE_PRIVATE
     )
 
-    @Volatile
-    private var customJwt: String? = prefs.getString(KEY_JWT_TOKEN, null)
-
     fun saveCustomJwtToken(token: String, userId: String? = null) {
-        customJwt = token
+
         val extractedId = userId ?: extractUserIdFromToken(token)
-
-        prefs.edit().apply {
-            putString(KEY_JWT_TOKEN, token)
-            putString(KEY_USER_ID, extractedId)
-            apply()
-        }
+        prefs.edit()
+            .putString(KEY_JWT_TOKEN, token)
+            .putString(KEY_USER_ID, extractedId)
+            .apply()
     }
 
-    fun getCustomJwtToken(): String? {
-        if (customJwt == null) {
-            customJwt = prefs.getString(KEY_JWT_TOKEN, null)
-        }
-        return customJwt
-    }
+    fun getCustomJwtToken(): String? = prefs.getString(KEY_JWT_TOKEN, null)
 
-    fun getUserId(): String? {
-        return prefs.getString(KEY_USER_ID, null)
-    }
+    fun getUserId(): String? = prefs.getString(KEY_USER_ID, null)
 
     fun clear() {
-        customJwt=null
         prefs.edit().clear().apply()
     }
 

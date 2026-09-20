@@ -167,7 +167,7 @@ fun AgendaScreen(
                 Spacer(modifier = Modifier.weight(1.3f))
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
 
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -185,7 +185,7 @@ fun AgendaScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(modifier = Modifier.height(5.dp))
 
             if(selectedTab == 0) {
                 CalendarView(
@@ -220,9 +220,9 @@ fun AgendaScreen(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(24.dp)
-                .size(64.dp)
+                .size(40.dp)
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add Item", modifier = Modifier.size(32.dp))
+            Icon(Icons.Default.Add, contentDescription = "Add Item", modifier = Modifier.size(20.dp))
         }
 
         if (showBottomSheet) {
@@ -1414,7 +1414,7 @@ fun AddRoutineScreen(
             // Frequency Options
             Text("Frequency", fontWeight = FontWeight.SemiBold, color = MintDarkGreen)
             Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 listOf("Daily", "Weekly", "Monthly").forEach { freq ->
                     val isSelected = selectedFrequency == freq
                     Button(
@@ -1426,7 +1426,7 @@ fun AddRoutineScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(freq, color = if (isSelected) SurfaceWhite else MintDarkGreen,
-                            fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+                            fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                     }
                 }
             }

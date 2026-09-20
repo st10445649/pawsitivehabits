@@ -13,7 +13,7 @@ import com.zahraag.pawsitivehabits.data.dao.WeightDao
 
 @Database(
     entities = [Pet::class, CalendarEvents::class, Routine::class, RoutineLogs::class, Weight::class, UserSettings::class],
-    version = 11,
+    version = 12,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

@@ -142,7 +142,7 @@ fun LoginScreen (
 
                     // Login Button
                     Button(
-                        onClick = { onLoginClick(email, password) },
+                        onClick = { onLoginClick(email.trim(), password.trim()) },
                         enabled = uiState !is AuthUiState.Loading,
                         shape = RoundedCornerShape(20.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = MintPrimary),

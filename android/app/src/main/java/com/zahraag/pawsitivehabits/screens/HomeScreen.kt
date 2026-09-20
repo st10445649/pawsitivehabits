@@ -383,13 +383,13 @@ fun HomeScreen(
                     title = "+ Weight",
                     color = MintCardSurface,
                     modifier = Modifier.weight(1f),
-                    onClick = { onNavigateToFeature("weight_tracker") }
+                    onClick = { onNavigateToFeature("weight") }
                 )
                 HomeShortcutButton(
                     title = "+ Medical",
                     color = MintCardSurface,
                     modifier = Modifier.weight(1f),
-                    onClick = { onNavigateToFeature("medical_records") }
+                    onClick = { onNavigateToFeature("medical_record") }
                 )
             }
 

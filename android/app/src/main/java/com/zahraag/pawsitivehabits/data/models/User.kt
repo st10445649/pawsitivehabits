@@ -2,6 +2,7 @@ package com.zahraag.pawsitivehabits.data.models
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
 import java.util.UUID
 
@@ -14,7 +15,9 @@ Reason: Guidelines for creating entities to save to RoomDB
 @Serializable
 @Entity(tableName = "user_table")
 data class User(
-    @PrimaryKey var id: String = UUID.randomUUID().toString(),
+    @PrimaryKey
+    @SerializedName("_id")
+    var id: String = UUID.randomUUID().toString(),
     var firebaseUid: String,
     var firstName: String,
     var lastName: String,

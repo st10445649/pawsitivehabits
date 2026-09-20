@@ -1,6 +1,7 @@
 package com.zahraag.pawsitivehabits.Navigation
 
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -68,31 +69,34 @@ fun AppNavigation(
     authViewModel: AuthViewModel = viewModel(),
     onGoogleSignInTriggered: () -> Unit = {}
 ) {
+    val TAG = "AppNavigation"
     val rootnavController = rememberNavController()
     val authUiState by authViewModel.uiState.collectAsState()
 
     val context = LocalContext.current.applicationContext
     val tokenManager = remember { TokenManager(context) }
-
     val currentUserId = tokenManager.getUserId() ?: ""
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) {
-        if (currentUserId.isNotBlank()) {
-            triggerFullSync(context, currentUserId)
-        }
-    }
+    Log.d(TAG, "Recomposed AppNavigation. Active currentUserId: '$currentUserId', AuthUiState: ${authUiState::class.simpleName}")
 
     LaunchedEffect(authUiState) {
         if (authUiState is AuthUiState.Success) {
-            val newUserId = tokenManager.getUserId() ?: ""
+            val newUserId = tokenManager.getUserId().orEmpty()
+            Log.d(TAG, "AuthUiState.Success received! Saved newUserId: '$newUserId'")
+
             if (newUserId.isNotBlank()) {
-                triggerFullSync(context, newUserId)
+                Log.d(TAG, "Triggering sync for user: $newUserId")
+                AuthRepository.triggerFullSync(context, newUserId)
+            } else {
+                Log.e(TAG, "CRITICAL: AuthUiState was Success, but TokenManager returned BLANK userId!")
             }
 
             rootnavController.navigate("main") {
-                popUpTo(Screen.Login.route) { inclusive = true }
-                popUpTo(Screen.SignUp.route) { inclusive = true }
+                popUpTo(0) { inclusive = true }
             }
+
+            authViewModel.resetAuthState()
         }
     }
 
@@ -107,12 +111,15 @@ fun AppNavigation(
             LoginScreen(
                 uiState = authUiState,
                 onLoginClick = { email, password ->
+                    Log.d(TAG, "Login button clicked for: $email")
                     authViewModel.login(email, password)
                 },
                 onGoogleSignInClick = {
+                    Log.d(TAG, "Google Sign-In button clicked.")
                     onGoogleSignInTriggered()
                 },
                 onNavigateToSignUp = {
+                    Log.d(TAG, "Navigating to SignUp screen...")
                     rootnavController.navigate(Screen.SignUp.route)
                 }
             )
@@ -125,9 +132,7 @@ fun AppNavigation(
                     authViewModel.register(email, password, firstName, lastName)
                 },
                 onSignUpSuccess = {
-                    rootnavController.navigate("main") {
-                        popUpTo(Screen.SignUp.route) { inclusive = true }
-                    }
+
                 },
                 onNavigateToLogin = {
                     rootnavController.navigate(Screen.Login.route)
@@ -166,16 +171,12 @@ fun AppNavigation(
                     rootnavController.navigate(featureRoute)
                 },
                 onLogout = {
-                    tokenManager.clear()
-                    FirebaseAuth.getInstance().signOut()
-                    WorkManager.getInstance(context).cancelAllWork()
-
-                    CoroutineScope(Dispatchers.IO).launch {
-                        AppDatabase.getDatabase(context).clearAllTables()
-                    }
-
-                    rootnavController.navigate(Screen.Login.route) {
-                        popUpTo(0) { inclusive = true }
+                    Log.d(TAG, "User clicked Logout on HomeScreen.")
+                    CoroutineScope(Dispatchers.Main).launch {
+                        AuthRepository.logoutUser(context)
+                        rootnavController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
                     }
                 },
                 userName = userName,
@@ -542,6 +543,7 @@ fun AppNavigation(
                 onLogout = {
                     coroutineScope.launch {
                         AuthRepository.logoutUser(context)
+                        authViewModel.resetAuthState()
                         rootnavController.navigate(Screen.Login.route) {
                             popUpTo(0) { inclusive = true }
                         }

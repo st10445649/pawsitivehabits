@@ -26,12 +26,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.work.WorkManager
-import com.google.firebase.auth.FirebaseAuth
 import com.zahraag.pawsitivehabits.BottomNavItem
-import com.zahraag.pawsitivehabits.data.SampleData.samplePets
-import com.zahraag.pawsitivehabits.data.models.AppDatabase
-import com.zahraag.pawsitivehabits.data.models.UserSettings
 import com.zahraag.pawsitivehabits.data.remote.TokenManager
 import com.zahraag.pawsitivehabits.data.repository.AuthRepository
 import com.zahraag.pawsitivehabits.ui.theme.MintCardSurface
@@ -39,9 +34,6 @@ import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
 import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
 import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
 import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -183,6 +175,7 @@ fun MainScreen(rootnavController: NavHostController){
                     routinesList = state.routines,
                     calendarEventsList = state.calendarEvents,
                     petNamesMap = state.petNamesMap,
+                    petColorMap = state.petColorMap,
                     selectedDate = state.selectedDate,
                     isLoading = state.isLoading,
                     onDateSelected = vm::onDateSelected,

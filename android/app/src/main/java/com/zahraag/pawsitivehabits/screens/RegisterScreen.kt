@@ -4,7 +4,9 @@ import android.R.attr.fontWeight
 import android.R.attr.onClick
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
@@ -13,10 +15,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.zahraag.pawsitivehabits.R
@@ -24,7 +28,6 @@ import com.zahraag.pawsitivehabits.ui.theme.*
 import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
 import com.zahraag.pawsitivehabits.ui.theme.TextDark
 import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
-
 @Composable
 fun RegisterScreen(
     uiState: AuthUiState,
@@ -35,13 +38,23 @@ fun RegisterScreen(
     var firstName by remember { mutableStateOf("") }
     var lastName by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
 
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+
+    // Helper email validator
+    fun isValidEmail(target: String): Boolean {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(target).matches()
+    }
+
+    // Clear error message whenever user modifies a field
+    fun updateField(action: () -> Unit) {
+        if (errorMessage != null) errorMessage = null
+        action()
+    }
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
@@ -56,8 +69,13 @@ fun RegisterScreen(
             .padding(20.dp),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.Start) {
-            // Main card with inputs
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
             Card(
                 shape = RoundedCornerShape(32.dp),
                 colors = CardDefaults.cardColors(containerColor = MintCardSurface.copy(alpha = 0.85f)),
@@ -79,7 +97,7 @@ fun RegisterScreen(
 
                     UnderlineInputField(
                         value = firstName,
-                        onValueChange = { firstName = it },
+                        onValueChange = { updateField { firstName = it } },
                         placeholder = "First Name"
                     )
 
@@ -87,7 +105,7 @@ fun RegisterScreen(
 
                     UnderlineInputField(
                         value = lastName,
-                        onValueChange = { lastName = it },
+                        onValueChange = { updateField { lastName = it } },
                         placeholder = "Last Name"
                     )
 
@@ -95,14 +113,15 @@ fun RegisterScreen(
 
                     UnderlineInputField(
                         value = email,
-                        onValueChange = { email = it },
+                        onValueChange = { updateField { email = it } },
                         placeholder = "Email"
                     )
+
                     Spacer(modifier = Modifier.height(16.dp))
 
                     UnderlineInputField(
                         value = password,
-                        onValueChange = { password = it },
+                        onValueChange = { updateField { password = it } },
                         placeholder = "Password",
                         isPassword = true,
                         isPasswordVisible = passwordVisible,
@@ -113,38 +132,50 @@ fun RegisterScreen(
 
                     UnderlineInputField(
                         value = confirmPassword,
-                        onValueChange = { confirmPassword = it },
+                        onValueChange = { updateField { confirmPassword = it } },
                         placeholder = "Confirm password",
                         isPassword = true,
                         isPasswordVisible = confirmPasswordVisible,
                         onTogglePassword = { confirmPasswordVisible = !confirmPasswordVisible }
                     )
 
-                    if (errorMessage != null || uiState is AuthUiState.Error) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                    val activeError = errorMessage ?: (uiState as? AuthUiState.Error)?.message
+                    if (!activeError.isNullOrEmpty()) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            text = errorMessage ?: (uiState as AuthUiState.Error).message,
-                            color = Color.Red,
-                            fontSize = 14.sp
+                            text = activeError,
+                            color = MaterialTheme.colorScheme.error,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    Spacer(modifier = Modifier.height(36.dp))
+                    Spacer(modifier = Modifier.height(28.dp))
 
                     Button(
                         onClick = {
+                            val trimmedFirst = firstName.trim().capitalize()
+                            val trimmedLast = lastName.trim().capitalize()
+                            val trimmedEmail = email.trim()
+
                             when {
+                                trimmedFirst.isEmpty() || trimmedLast.isEmpty() || trimmedEmail.isEmpty() || password.isEmpty() -> {
+                                    errorMessage = "Please fill in all required fields."
+                                }
+                                !isValidEmail(trimmedEmail) -> {
+                                    errorMessage = "Please enter a valid email address."
+                                }
+                                !isValidPassword(password) -> {
+                                    errorMessage = "Password must be at least 8 characters long and contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character."
+                                }
                                 password != confirmPassword -> {
-                                    errorMessage = "Passwords do not match"
+                                    errorMessage = "Passwords do not match."
                                 }
-
-                                email.isBlank() || password.isBlank() -> {
-                                    errorMessage = "Please fill in all required fields"
-                                }
-
                                 else -> {
                                     errorMessage = null
-                                    onRegisterClick(email, password, firstName, lastName)
+                                    onRegisterClick(trimmedEmail, password, trimmedFirst, trimmedLast)
                                 }
                             }
                         },
@@ -169,18 +200,19 @@ fun RegisterScreen(
                             )
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    TextButton(onClick = onNavigateToLogin) {
+                        Text(
+                            text = "Already have an account? Log In",
+                            color = MintDarkGreen,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
             }
         }
-        Icon(
-            painter = painterResource(id = R.drawable.greenpaws),
-            contentDescription = null,
-            tint = MintDarkGreen,
-            modifier = Modifier.size(160.dp). offset(
-                y= (-300).dp,
-                x = (-90).dp
-            )
-        )
     }
 }
 
@@ -224,4 +256,9 @@ fun UnderlineInputField(
         singleLine = true,
         modifier = Modifier.fillMaxWidth()
     )
+}
+
+fun isValidPassword(password: String): Boolean {
+    val passwordPattern = Regex("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&_\\-#^()])[A-Za-z\\d@$!%*?&_\\-#^()]{8,}$")
+    return passwordPattern.matches(password)
 }
