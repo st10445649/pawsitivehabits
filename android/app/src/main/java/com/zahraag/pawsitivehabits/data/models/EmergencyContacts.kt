@@ -1,0 +1,18 @@
+package com.zahraag.pawsitivehabits.data.models
+
+import androidx.room.PrimaryKey
+import java.util.UUID
+
+data class EmergencyContact(
+    @PrimaryKey
+    val id: String = UUID.randomUUID().toString(),
+    val name: String,
+    val role: String, // e.g., "24/7 Vet Clinic", "Poison Control", "Pet Sitter"
+    val phoneNumber: String,
+    val address: String = "",
+
+    @Transient
+var isSynced: Boolean = false
+)
+
+

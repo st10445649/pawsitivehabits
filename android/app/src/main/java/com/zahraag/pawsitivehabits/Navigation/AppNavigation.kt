@@ -1,0 +1,554 @@
+package com.zahraag.pawsitivehabits.Navigation
+
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.work.WorkManager
+import com.google.firebase.auth.FirebaseAuth
+import com.zahraag.pawsitivehabits.BottomNavItem
+import com.zahraag.pawsitivehabits.data.SampleData.sampleExpenses
+import com.zahraag.pawsitivehabits.data.SampleData.samplePetNamesMap
+import com.zahraag.pawsitivehabits.data.SampleData.sampleMedicalRecords
+import com.zahraag.pawsitivehabits.data.models.AppDatabase
+import com.zahraag.pawsitivehabits.data.remote.TokenManager
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository
+import com.zahraag.pawsitivehabits.data.repository.AuthRepository.triggerFullSync
+import com.zahraag.pawsitivehabits.screens.AddEditCalendarEventScreen
+import com.zahraag.pawsitivehabits.screens.AddEditMedicalRecordScreen
+import com.zahraag.pawsitivehabits.screens.AddExpenseScreen
+import com.zahraag.pawsitivehabits.screens.AddRoutineScreen
+import com.zahraag.pawsitivehabits.screens.AgendaScreen
+import com.zahraag.pawsitivehabits.screens.EmergencyContactsScreen
+import com.zahraag.pawsitivehabits.screens.ExpenseScreen
+import com.zahraag.pawsitivehabits.screens.HomeScreen
+import com.zahraag.pawsitivehabits.screens.LoginScreen
+import com.zahraag.pawsitivehabits.screens.MainScreen
+import com.zahraag.pawsitivehabits.screens.MedicalRecordsScreen
+import com.zahraag.pawsitivehabits.screens.MemoriesScreen
+import com.zahraag.pawsitivehabits.screens.PetDetailScreen
+import com.zahraag.pawsitivehabits.screens.PetScreen
+import com.zahraag.pawsitivehabits.screens.RegisterScreen
+import com.zahraag.pawsitivehabits.screens.Screen
+import com.zahraag.pawsitivehabits.screens.SettingsScreen
+import com.zahraag.pawsitivehabits.screens.WeightScreen
+import com.zahraag.pawsitivehabits.ui.theme.MintDarkGreen
+import com.zahraag.pawsitivehabits.viewmodel.AuthUiState
+import com.zahraag.pawsitivehabits.viewmodel.AuthViewModel
+import com.zahraag.pawsitivehabits.viewmodel.CalendarViewModel
+import com.zahraag.pawsitivehabits.viewmodel.HomeViewModel
+import com.zahraag.pawsitivehabits.viewmodel.PetViewModel
+import com.zahraag.pawsitivehabits.viewmodel.RoutineViewModel
+import com.zahraag.pawsitivehabits.viewmodel.UserViewModel
+import com.zahraag.pawsitivehabits.viewmodel.WeightViewModel
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun AppNavigation(
+    authViewModel: AuthViewModel = viewModel(),
+    onGoogleSignInTriggered: () -> Unit = {}
+) {
+    val rootnavController = rememberNavController()
+    val authUiState by authViewModel.uiState.collectAsState()
+
+    val context = LocalContext.current.applicationContext
+    val tokenManager = remember { TokenManager(context) }
+
+    val currentUserId = tokenManager.getUserId() ?: ""
+
+    LaunchedEffect(Unit) {
+        if (currentUserId.isNotBlank()) {
+            triggerFullSync(context, currentUserId)
+        }
+    }
+
+    LaunchedEffect(authUiState) {
+        if (authUiState is AuthUiState.Success) {
+            val newUserId = tokenManager.getUserId() ?: ""
+            if (newUserId.isNotBlank()) {
+                triggerFullSync(context, newUserId)
+            }
+
+            rootnavController.navigate("main") {
+                popUpTo(Screen.Login.route) { inclusive = true }
+                popUpTo(Screen.SignUp.route) { inclusive = true }
+            }
+        }
+    }
+
+    val startDestination = if (currentUserId.isNotBlank()) "main" else Screen.Login.route
+
+    NavHost(
+        navController = rootnavController,
+        startDestination = startDestination
+    ) {
+
+        composable(Screen.Login.route) {
+            LoginScreen(
+                uiState = authUiState,
+                onLoginClick = { email, password ->
+                    authViewModel.login(email, password)
+                },
+                onGoogleSignInClick = {
+                    onGoogleSignInTriggered()
+                },
+                onNavigateToSignUp = {
+                    rootnavController.navigate(Screen.SignUp.route)
+                }
+            )
+        }
+
+        composable(Screen.SignUp.route) {
+            RegisterScreen(
+                uiState = authUiState,
+                onRegisterClick = { email, password, firstName, lastName ->
+                    authViewModel.register(email, password, firstName, lastName)
+                },
+                onSignUpSuccess = {
+                    rootnavController.navigate("main") {
+                        popUpTo(Screen.SignUp.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    rootnavController.navigate(Screen.Login.route)
+                }
+            )
+        }
+
+
+        composable("main") {
+            MainScreen(
+                rootnavController = rootnavController
+            )
+        }
+
+        composable(Screen.Home.route) {
+
+            val homeViewModel: HomeViewModel = viewModel()
+
+            val pets by homeViewModel.pets.collectAsStateWithLifecycle()
+            val selectedPetId by homeViewModel.selectedPetId.collectAsStateWithLifecycle()
+            val context = LocalContext.current
+
+            val userName by homeViewModel.userName.collectAsStateWithLifecycle()
+            val routines by homeViewModel.routines.collectAsStateWithLifecycle()
+            val upcomingEvent by homeViewModel.upcomingEvent.collectAsStateWithLifecycle()
+
+            HomeScreen(
+                pets = pets,
+                selectedPetId = selectedPetId,
+                onSelectPet = { id ->
+                    homeViewModel.selectPet(id)
+                },
+                onNavigateToPetDetails = {
+                },
+                onNavigateToFeature = { featureRoute ->
+                    rootnavController.navigate(featureRoute)
+                },
+                onLogout = {
+                    tokenManager.clear()
+                    FirebaseAuth.getInstance().signOut()
+                    WorkManager.getInstance(context).cancelAllWork()
+
+                    CoroutineScope(Dispatchers.IO).launch {
+                        AppDatabase.getDatabase(context).clearAllTables()
+                    }
+
+                    rootnavController.navigate(Screen.Login.route) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                },
+                userName = userName,
+                routines = routines,
+                event = upcomingEvent,
+                onToggleRoutine = { routineId, isCompleted ->
+                    homeViewModel.toggleRoutine(routineId)
+                }
+            )
+        }
+
+
+        composable(Screen.Pets.route) {
+            val userId = tokenManager.getUserId() ?: ""
+            val petViewModel: PetViewModel = viewModel()
+
+            PetScreen(
+                currentUserId = userId,
+                viewModel = petViewModel,
+                onViewDetails = { petId ->
+                    rootnavController.navigate("pet_details/$petId")
+                },
+                onBackClick = {
+                    rootnavController.popBackStack()
+                }
+            )
+        }
+
+        composable(
+            route = "pet_details/{petId}",
+            arguments = listOf(navArgument("petId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val petId = backStackEntry.arguments?.getString("petId")
+            val petViewModel: PetViewModel = viewModel()
+            LaunchedEffect(petId) {
+                petViewModel.selectPet(petId)
+            }
+
+
+            val selectedPet by petViewModel.selectedPet.collectAsStateWithLifecycle()
+            val weightLogs by petViewModel.selectedPetWeightLogs.collectAsStateWithLifecycle()
+            val upcomingEvent by petViewModel.selectedPetUpcomingEvent.collectAsStateWithLifecycle()
+            val pet = selectedPet
+
+            if (pet != null) {
+                PetDetailScreen(
+                    pet = pet,
+                    weights = weightLogs,
+                    nextUpcomingEvent = upcomingEvent,
+                    onBackClick = { rootnavController.popBackStack() },
+                    onEditPetClick = { rootnavController.navigate("editPet/${pet.id}") },
+                    onFeatureClick = { route -> rootnavController.navigate(route) }
+                )
+            } else {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = MintDarkGreen)
+                }
+            }
+        }
+        composable(Screen.Agenda.route) {
+
+            val vm: CalendarViewModel = viewModel()
+            val state by vm.uiState.collectAsStateWithLifecycle()
+
+            AgendaScreen(
+                routinesList = state.routines,
+                calendarEventsList = state.calendarEvents,
+                petNamesMap = state.petNamesMap,
+                selectedDate = state.selectedDate,
+                isLoading = state.isLoading,
+
+                onDateSelected = vm::onDateSelected,
+
+                // DELETE EVENT
+                onDeleteCalendarEvent = { event ->
+                    vm.deleteCalendarEvent(event)
+                },
+
+                // DELETE ROUTINE
+                onDeleteRoutine = { routine ->
+                    vm.deleteRoutine(routine)
+                },
+
+                onNavigateBack = {
+                    rootnavController.popBackStack()
+                },
+
+                onNavigateToAddRoutine = {
+
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("routineToEditId")
+
+                    rootnavController.navigate(Screen.AddRoutine.route)
+                },
+
+
+                onNavigateToEditRoutine = { routine ->
+
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("routineToEditId", routine.id)
+
+
+                    rootnavController.navigate(
+                        Screen.AddRoutine.route
+                    )
+                },
+
+                onNavigateToAddCalendarEvent = {
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.navigate(Screen.AddCalendarEvent.route)
+                },
+
+                onNavigateToEditCalendarEvent = { event ->
+                    rootnavController
+                        .currentBackStackEntry
+                        ?.savedStateHandle
+                        ?.set("eventToEditId", event.id)
+
+                    rootnavController.navigate(Screen.AddCalendarEvent.route)
+                }
+            )
+        }
+
+        composable(Screen.AddCalendarEvent.route) {
+
+            val calendarVm: CalendarViewModel = viewModel()
+            val state by calendarVm.uiState.collectAsStateWithLifecycle()
+
+            val eventToEditId =
+                rootnavController
+                    .previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<String>("eventToEditId")
+
+            val eventToEdit = state.calendarEvents
+                .find { it.id == eventToEditId }
+
+            AddEditCalendarEventScreen(
+                petsMap = state.petNamesMap,
+                existingEvent = eventToEdit,
+
+                onNavigateBack = {
+
+                    rootnavController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.popBackStack()
+                },
+
+                onSaveEvent = { event ->
+
+                    calendarVm.saveCalendarEvent(
+                        event = event,
+                        onSuccess = {
+
+                            rootnavController
+                                .previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.remove<String>("eventToEditId")
+
+                            rootnavController.popBackStack()
+                        }
+                    )
+                },
+
+                /* onDeleteEvent = { event ->
+
+                    calendarVm.deleteCalendarEvent(event)
+
+                    rootnavController
+                        .previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("eventToEditId")
+
+                    rootnavController.popBackStack()
+                }*/
+            )
+        }
+
+        composable(Screen.AddRoutine.route) {
+
+            val routineVm: RoutineViewModel = viewModel()
+
+            val routineState by routineVm.uiState.collectAsStateWithLifecycle()
+
+            val routineToEditId =
+                rootnavController.previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.get<String>("routineToEditId")
+
+            val calendarVm: CalendarViewModel = viewModel()
+
+            val calendarState by calendarVm.uiState.collectAsStateWithLifecycle()
+
+            val routineToEdit =
+                calendarState.routines
+                    .find { it.id == routineToEditId }
+
+            AddRoutineScreen(
+                petsMap = routineState.petsMap,
+                routineToEdit = routineToEdit,
+
+                onNavigateBack = {
+                    rootnavController.previousBackStackEntry
+                        ?.savedStateHandle
+                        ?.remove<String>("routineToEditId")
+
+                    rootnavController.popBackStack()
+                },
+
+                onSaveRoutine = { petId,
+                                  routineType,
+                                  customText,
+                                  frequency,
+                                  repeatDays,
+                                  startDate,
+                                  endDate,
+                                  time ->
+
+                    routineVm.createOrUpdateRoutine(
+                        routineToEdit = routineToEdit,
+                        petId = petId,
+                        routineType = routineType,
+                        customText = customText,
+                        frequency = frequency,
+                        days = repeatDays,
+                        startDate = startDate,
+                        endDate = endDate,
+                        time = time,
+                        onSuccess = {
+
+                            rootnavController.previousBackStackEntry
+                                ?.savedStateHandle
+                                ?.remove<String>("routineToEditId")
+
+                            rootnavController.popBackStack()
+                        }
+                    )
+                }
+            )
+        }
+
+        composable(Screen.Weight.route) {
+            val weightViewModel: WeightViewModel = viewModel()
+            val petViewModel: PetViewModel = viewModel()
+
+            val weightList by weightViewModel.weightList.collectAsState()
+            val weightUnit by weightViewModel.weightUnit.collectAsStateWithLifecycle()
+
+            val userPets by petViewModel.localUserPets.collectAsState()
+            val petsMap = remember(userPets) {
+                userPets.associate { pet -> pet.id to pet.name }
+            }
+
+            WeightScreen(
+                petsMap = petsMap,
+                weightList = weightList,
+                weightUnit = weightUnit,
+                currentUserId = weightViewModel.userId,
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveWeight = { newWeight ->
+                    weightViewModel.saveWeight(newWeight)
+                },
+                onDeleteWeight = { weight ->
+                    weightViewModel.deleteWeight(weight.id)
+                }
+            )
+        }
+
+        composable(Screen.Expenses.route) {
+            ExpenseScreen(
+                onNavigateBack = { rootnavController.popBackStack() },
+                expensesList = sampleExpenses,
+                petsMap = samplePetNamesMap,
+                onNavigateToAddExpense = { rootnavController.navigate(Screen.AddExpenses.route) },
+                onNavigateToEditExpense = { rootnavController.navigate(Screen.AddExpenses.route) }
+            ) { }
+        }
+
+        composable(Screen.AddExpenses.route) {
+            AddExpenseScreen(
+                existingExpense = null,
+                petsMap = samplePetNamesMap,
+                currentUserId = "user123",
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveExpense = {},
+                onDeleteExpense = {})
+        }
+
+
+        composable(Screen.MedicalRecord.route) {
+            MedicalRecordsScreen(
+                medicalList = sampleMedicalRecords,
+                petsMap = samplePetNamesMap,
+                onNavigateBack = { rootnavController.popBackStack() },
+                onNavigateToAddRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
+                onNavigateToEditRecord = { rootnavController.navigate(Screen.AddMedicalRecord.route) },
+            ) { }
+        }
+
+        composable(Screen.AddMedicalRecord.route) {
+            AddEditMedicalRecordScreen(
+                petsMap = samplePetNamesMap,
+                onNavigateBack = { rootnavController.popBackStack() },
+                existingRecord = null,
+                currentUserId = "user123",
+                onSaveRecord = { }
+            ) { }
+        }
+
+        composable(Screen.Memories.route) {
+            MemoriesScreen(
+                memoriesList = emptyList(),
+                petsMap = samplePetNamesMap,
+                currentUserId = "user123",
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveMemory = { rootnavController.navigate(Screen.Memories.route) }
+            ) { }
+        }
+
+        composable(Screen.EmergencyContacts.route) {
+            EmergencyContactsScreen(
+                contactsList = emptyList(),
+                onNavigateBack = { rootnavController.popBackStack() },
+                onAddContact = { },
+                onDeleteContact = { }
+            )
+        }
+
+
+        composable(Screen.Settings.route) {
+            val vm: UserViewModel = viewModel()
+            val coroutineScope = rememberCoroutineScope()
+
+            val uiState by vm.uiState.collectAsStateWithLifecycle()
+
+            SettingsScreen(
+                uiState = uiState,
+                pets = uiState.pets,
+                onNavigateBack = { rootnavController.popBackStack() },
+                onSaveSettings = { updatedSettings ->
+                    vm.saveSettings(updatedSettings)
+                },
+                onSyncDataClick = {
+                    vm.syncAllData()
+                    vm.loadUserData()
+                },
+                onExportDataClick = { petId, uri ->
+                    vm.exportPetData(petId, uri)
+                },
+                onLogout = {
+                    coroutineScope.launch {
+                        AuthRepository.logoutUser(context)
+                        rootnavController.navigate(Screen.Login.route) {
+                            popUpTo(0) { inclusive = true }
+                        }
+                    }
+                }
+            )
+
+        }
+    }
+}
