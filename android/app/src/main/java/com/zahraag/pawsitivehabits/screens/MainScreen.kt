@@ -175,6 +175,7 @@ fun MainScreen(rootnavController: NavHostController){
                     routinesList = state.routines,
                     calendarEventsList = state.calendarEvents,
                     petNamesMap = state.petNamesMap,
+                    petColorMap = state.petColorMap,
                     selectedDate = state.selectedDate,
                     isLoading = state.isLoading,
                     onDateSelected = vm::onDateSelected,

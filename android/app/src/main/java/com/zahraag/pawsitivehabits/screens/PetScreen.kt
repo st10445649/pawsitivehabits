@@ -989,15 +989,6 @@ fun PetDetailScreen(
                         )
                     }
                 },
-                actions = {
-                    IconButton(onClick = onEditPetClick) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Pet",
-                            tint = MintDarkGreen
-                        )
-                    }
-                },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = MintBackground)
             )
         },
