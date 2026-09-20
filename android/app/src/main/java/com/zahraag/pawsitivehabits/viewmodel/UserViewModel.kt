@@ -6,6 +6,7 @@ import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
 import android.net.Uri
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zahraag.pawsitivehabits.data.models.AppDatabase
@@ -157,18 +158,48 @@ class UserViewModel(application: Application) : AndroidViewModel(application) {
                 var canvas = page.canvas
 
                 // Paints
-                val headerPaint = Paint().apply { MintPrimary; style = Paint.Style.FILL }
-                val headerTitlePaint = Paint().apply { color = Color.WHITE; textSize = 22f; isFakeBoldText = true }
-                val headerSubPaint = Paint().apply { color = Color.WHITE; textSize = 11f }
+                val headerPaint = Paint().apply {
+                    color = MintPrimary.toArgb()
+                    style = Paint.Style.FILL
+                }
+                val headerTitlePaint = Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = 22f
+                    isFakeBoldText = true
+                }
+                val headerSubPaint = Paint().apply {
+                    color = android.graphics.Color.WHITE
+                    textSize = 11f
+                }
 
-                val sectionHeaderPaint = Paint().apply { MintCardSurface; textSize = 14f; isFakeBoldText = true }
-                val labelPaint = Paint().apply { MintDarkGreen; textSize = 10f; isFakeBoldText = true }
-                val valuePaint = Paint().apply { MintPrimary; textSize = 11f }
-                val tableTextPaint = Paint().apply { MintDarkGreen; textSize = 10f }
+                val sectionHeaderPaint = Paint().apply {
+                    color = MintDarkGreen.toArgb()
+                    textSize = 14f
+                    isFakeBoldText = true
+                }
+                val labelPaint = Paint().apply {
+                    color = MintDarkGreen.toArgb()
+                    textSize = 10f
+                    isFakeBoldText = true
+                }
+                val valuePaint = Paint().apply {
+                    color = MintPrimary.toArgb()
+                    textSize = 11f
+                }
+                val tableTextPaint = Paint().apply {
+                    color = MintDarkGreen.toArgb()
+                    textSize = 10f
+                }
 
-                val linePaint = Paint().apply { MintCardSurface; strokeWidth = 1f; style = Paint.Style.STROKE }
-                val zebraBgPaint = Paint().apply { MintBackground; style = Paint.Style.FILL }
-
+                val linePaint = Paint().apply {
+                    color = MintCardSurface.copy(alpha = 1f).toArgb()
+                    strokeWidth = 1f
+                    style = Paint.Style.STROKE
+                }
+                val zebraBgPaint = Paint().apply {
+                    color = MintBackground.copy(alpha = 1f).toArgb()
+                    style = Paint.Style.FILL
+                }
                 var y = topMargin
 
                 fun drawPageHeader() {

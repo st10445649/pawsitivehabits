@@ -77,6 +77,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.capitalize
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -328,7 +329,7 @@ fun AddPetScreen(
 
     val isNameValid = name.trim().isNotBlank()
     val isPetTypeValid = petType.trim().isNotBlank()
-    val isGenderValid = petType.trim().isNotBlank()
+    val isGenderValid = gender.trim().isNotBlank()
     val isColorValid = selectedColorHex.trim().isNotBlank()
 
     val isFormValid = isNameValid && isPetTypeValid && isColorValid && isGenderValid
@@ -727,9 +728,9 @@ fun AddPetScreen(
                         val newPet = Pet(
                             id = existingPet?.id ?: UUID.randomUUID().toString(),
                             userId = "",
-                            name = name.trim(),
+                            name = name.trim().capitalize(),
                             petType = petType,
-                            breed = breed.ifBlank { null },
+                            breed = breed.capitalize().ifBlank { null },
                             gender = gender,
                             microchipId = microchipNumber.ifBlank { null },
                             isNeutered = isNeutered,
@@ -960,6 +961,7 @@ fun PetDetailScreen(
     val imageSource = pet.remoteImageUrl ?: pet.localImagePath
 
     val latestWeight = weights.lastOrNull()?.weightValue ?: 0.0
+    val unit = weights.lastOrNull()?.unit
 
     val configuration = LocalConfiguration.current
     val dateFormatter = remember(configuration) {
@@ -1128,7 +1130,7 @@ fun PetDetailScreen(
                         val safeWeight = latestWeight ?: 0.0
 
                         Text(
-                            text = if (safeWeight > 0.0) "$safeWeight kg" else "Not Tracked",
+                            text = if (safeWeight > 0.0) "$safeWeight $unit" else "Not Tracked",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                             color = MintDarkGreen
                         )
