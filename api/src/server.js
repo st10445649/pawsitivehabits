@@ -15,7 +15,7 @@ const startServer = async() => {
     try{
         await connectDB();
 
-app.listen(PORT, ()=>
+app.listen(PORT,'0.0.0.0', ()=>
 {
     console.log(
               `${APP_NAME} is running securely on http://localhost:${PORT}`
